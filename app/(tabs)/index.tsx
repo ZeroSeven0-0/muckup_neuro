@@ -1,42 +1,107 @@
+/**
+ * ============================================================================
+ * DASHBOARD SCREEN (PANTALLA DE INICIO)
+ * ============================================================================
+ * Ubicación: app/(tabs)/index.tsx
+ * Ruta: /(tabs)/ (pantalla principal al abrir la app)
+ * 
+ * PROPÓSITO:
+ * Esta es la pantalla principal que ve el usuario al abrir la app.
+ * Muestra un resumen completo de su progreso, próximos pasos, logros y sesiones.
+ * 
+ * SECCIONES DE LA PANTALLA:
+ * 1. Header con saludo personalizado y botón de perfil
+ * 2. Accesos rápidos (Mi Ruta, Agendar Sesión)
+ * 3. Progreso general (% completado, módulos terminados)
+ * 4. Continuar aprendizaje (siguiente módulo recomendado)
+ * 5. Tus Logros (4 badges + botón "Ver todos")
+ * 6. Próximas sesiones (si hay sesiones agendadas)
+ * 7. FAB de asistente IA (botón flotante)
+ * 
+ * CÁLCULOS IMPORTANTES:
+ * - progressPercent: Porcentaje de lecciones completadas del total
+ * - completedModules: Módulos donde TODAS las lecciones están completadas
+ * - inProgressModules: Módulos con al menos 1 lección completada pero no todas
+ * - earnedIds: Set de IDs de logros desbloqueados según condiciones
+ * 
+ * NAVEGACIÓN:
+ * - Botón perfil → /profile
+ * - Mi Ruta → /(tabs)/explore
+ * - Agendar Sesión → /(tabs)/agenda
+ * - Ver todos (logros) → /profile con tab=achievements
+ * - Continuar aprendizaje → /(tabs)/explore
+ * 
+ * ACCESIBILIDAD:
+ * - Todos los botones tienen accessibilityRole y accessibilityLabel
+ * - Soporta largeText (texto grande)
+ * - Soporta easyReading (textos simplificados)
+ * - Soporta noBorders (sin bordes)
+ * - Soporta highContrast (alto contraste)
+ * - Soporta theme dark/light
+ * 
+ * INTEGRACIÓN CON BACKEND (FUTURO):
+ * - userFirstName vendrá del perfil del usuario autenticado
+ * - modules vendrá de la API (ya está en CoursesContext)
+ * - sessions vendrá de la API (ya está en SessionsContext)
+ * - earnedIds se calculará en el backend según el progreso real
+ * ============================================================================
+ */
+
 import { ACHIEVEMENTS } from '@/constants/b2c-mock';
-import { useCourses } from '@/contexts/CoursesContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { useCourses } from '@/contexts/CoursesContext';
+import { useSessions } from '@/contexts/SessionsContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-// Tab principal: Dashboard B2C (Inicio)
-// Diseño simplificado, con colores y tarjetas alineadas con el concepto que definimos.
-
-const ACCENT = '#8379CD';
+const ACCENT = '#6B7280'; // Color de acento: gris medio (usado en botones, bordes, íconos)
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { theme, highContrast, largeText } = useAppSettings();
+  // Obtener configuraciones de accesibilidad del usuario
+  const { theme, highContrast, largeText, noBorders, easyReading } = useAppSettings();
+  // Obtener datos de cursos y sesiones
   const { modules } = useCourses();
+  const { sessions } = useSessions();
 
-  // Datos mock basados en el Dashboard web de referencia
+  // ========== DATOS DEL USUARIO ==========
+  // TODO: Cuando conectes con el backend, obtén esto del perfil del usuario autenticado
   const userFirstName = 'Alex';
-  const totalPoints = 320;
-  const totalAchievements = 5;
 
+  // ========== CÁLCULOS DE PROGRESO ==========
+  // Total de módulos disponibles
   const totalModules = modules.length;
+  
+  // Módulos completados: donde TODAS las lecciones están completadas
   const completedModules = modules.filter(
     (m) => m.lessons.length > 0 && m.lessons.every((l) => l.completed)
   ).length;
+  
+  // Módulos en progreso: al menos 1 lección completada pero no todas
   const inProgressModules = modules.filter(
     (m) => m.lessons.some((l) => l.completed) && !m.lessons.every((l) => l.completed)
   ).length;
+  
+  // Módulos restantes por completar
   const remainingModules = totalModules - completedModules;
+  
+  // Total de lecciones en todos los módulos
   const totalLessons = modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  
+  // Lecciones completadas en todos los módulos
   const completedLessons = modules.reduce(
     (acc, m) => acc + m.lessons.filter((l) => l.completed).length,
     0
   );
+  
+  // Porcentaje de progreso general (0-100)
   const progressPercent =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
+  // ========== SIGUIENTE MÓDULO RECOMENDADO ==========
+  // Buscar el primer módulo que tenga lecciones sin completar
   const nextModuleIndex = modules.findIndex((m) => m.lessons.some((l) => !l.completed));
   const nextModuleOrder = nextModuleIndex >= 0 ? nextModuleIndex + 1 : 0;
   const nextModuleTitle =
@@ -45,22 +110,44 @@ export default function DashboardScreen() {
     nextModuleIndex >= 0
       ? modules[nextModuleIndex].lessons.find((l) => !l.completed)?.durationMinutes ?? 0
       : 0;
-  const upcomingSessions = [
-    {
-      id: 's1',
-      type: 'sesión 1: estrategia',
-      dateLabel: 'Jueves 14 de marzo',
-      time: '18:00h',
-      status: 'Confirmada',
-    },
-  ];
+  
+  // Sesiones próximas (todas las sesiones disponibles)
+  const upcomingSessions = sessions;
 
-  const earnedIds = new Set(['first_step', 'cv_master', 'linkedin_pro', 'neuro_impulso_1', 'job_hunter']);
+  // ========== CÁLCULO DE LOGROS DESBLOQUEADOS ==========
+  // Contar lecciones completadas para condiciones de logros
+  const completedLessonsCount = modules.reduce(
+    (acc, m) => acc + m.lessons.filter((l) => l.completed).length,
+    0
+  );
+  
+  // Set de IDs de logros desbloqueados
+  const earnedIds = new Set<string>();
+  
+  // Condiciones para desbloquear logros:
+  if (completedModules >= 1) earnedIds.add('first_step');                    // Primer módulo completado
+  if (completedModules >= 2) earnedIds.add('neuro_impulso_2');              // Dos módulos completados
+  if (completedModules === totalModules && totalModules > 0) {              // Todos los módulos completados
+    earnedIds.add('neuro_impulso_3');
+    earnedIds.add('course_complete');
+  }
+  if (completedLessonsCount >= 3) {                                         // Al menos 3 lecciones completadas
+    earnedIds.add('soft_skills_star');
+    earnedIds.add('neuro_impulso_1');
+  }
+  // Logro especial: completar módulo de entrevistas
+  const entrevistasModule = modules.find((m) => m.title.toLowerCase().includes('entrevistas'));
+  if (entrevistasModule && entrevistasModule.lessons.every((l) => l.completed)) {
+    earnedIds.add('interview_ready');
+  }
+  
+  // Contar total de logros desbloqueados
   const earnedCount = Array.from(earnedIds).length;
 
-  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
-  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
-  const sub = theme === 'dark' ? '#C7C9E8' : '#334155';
+  // ========== COLORES SEGÚN TEMA ==========
+  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';      // Fondo principal
+  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';    // Texto principal
+  const sub = theme === 'dark' ? '#C7C9E8' : '#64748B';     // Texto secundario
 
   return (
     <View style={[styles.root, { backgroundColor: bg }]}>
@@ -77,76 +164,20 @@ export default function DashboardScreen() {
               ¡Hola, {userFirstName}! 👋
             </Text>
             <Text style={[styles.subtitle, { color: sub }, largeText && styles.subtitleLarge]}>
-              Continúa tu transformación profesional con una ruta guiada, sin distracciones, con
-              evidencias claras y pasos accionables.
+              {easyReading 
+                ? 'Sigue tu ruta paso a paso.' 
+                : 'Continúa tu transformación profesional con una ruta guiada, sin distracciones, con evidencias claras y pasos accionables que te llevarán a tu objetivo.'}
             </Text>
           </View>
           <Pressable
-            style={styles.profileAvatar}
+            style={[styles.profileAvatar, theme === 'light' && styles.profileAvatarLight, noBorders && styles.profileAvatarNoBorder]}
             accessibilityRole="button"
             accessibilityLabel="Ver y editar tu perfil"
             hitSlop={8}
             onPress={() => router.push('/profile')}
           >
-            <Ionicons name="person" size={20} color="#9CA3AF" />
+            <Ionicons name="person" size={20} color={theme === 'dark' ? '#9CA3AF' : ACCENT} />
           </Pressable>
-        </View>
-
-        <View style={styles.quickStatsRow}>
-          <View
-            accessible
-            accessibilityLabel={`Puntos totales: ${totalPoints}`}
-            style={[styles.quickStatCard, theme === 'light' && styles.quickStatCardLight]}
-          >
-            <View style={styles.quickStatIcon}>
-              <Ionicons name="trophy" size={20} color={ACCENT} />
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.quickStatValue,
-                  { color: theme === 'dark' ? '#FFFFFF' : '#000000' },
-                ]}
-              >
-                {totalPoints}
-              </Text>
-              <Text
-                style={[
-                  styles.quickStatLabel,
-                  { color: theme === 'dark' ? '#C7C9E8' : '#4B5563' },
-                ]}
-              >
-                Puntos
-              </Text>
-            </View>
-          </View>
-          <View
-            accessible
-            accessibilityLabel={`Logros totales: ${totalAchievements}`}
-            style={[styles.quickStatCard, theme === 'light' && styles.quickStatCardLight]}
-          >
-            <View style={styles.quickStatIcon}>
-              <Ionicons name="sparkles" size={20} color={ACCENT} />
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.quickStatValue,
-                  { color: theme === 'dark' ? '#FFFFFF' : '#000000' },
-                ]}
-              >
-                {totalAchievements}
-              </Text>
-              <Text
-                style={[
-                  styles.quickStatLabel,
-                  { color: theme === 'dark' ? '#C7C9E8' : '#4B5563' },
-                ]}
-              >
-                Logros
-              </Text>
-            </View>
-          </View>
         </View>
 
         {/* Acceso rápido principal */}
@@ -155,10 +186,11 @@ export default function DashboardScreen() {
             styles.card,
             theme === 'light' && styles.cardLight,
             highContrast && styles.cardHC,
+            noBorders && styles.cardNoBorder,
           ]}
           accessibilityLabel="Accesos rápidos a áreas clave."
         >
-          <Text accessibilityRole="header" style={[styles.sectionTitle, { color: text }]}>Accesos rápidos</Text>
+          <Text accessibilityRole="header" style={[styles.sectionTitle, { color: text }, largeText && { fontSize: 18 }]}>Accesos rápidos</Text>
           <Pressable
             style={styles.quickLink}
             accessibilityRole="button"
@@ -166,8 +198,8 @@ export default function DashboardScreen() {
             accessibilityHint="Abre tu ruta con cursos y lecciones."
             onPress={() => router.push('/(tabs)/explore')}
           >
-            <Ionicons name="school" size={20} color={ACCENT} style={{ marginRight: 8 }} />
-            <Text style={[styles.quickLinkText, { color: text }]}>Mi Ruta de Aprendizaje</Text>
+            <Ionicons name="school" size={20} color={theme === 'dark' ? ACCENT : '#0F172A'} style={{ marginRight: 8 }} />
+            <Text style={[styles.quickLinkText, { color: text }, largeText && { fontSize: 16 }]}>Mi Ruta de Aprendizaje</Text>
           </Pressable>
           <Pressable
             style={styles.quickLink}
@@ -176,8 +208,8 @@ export default function DashboardScreen() {
             accessibilityHint="Abre tu agenda de sesiones."
             onPress={() => router.push('/(tabs)/agenda')}
           >
-            <Ionicons name="calendar" size={20} color={ACCENT} style={{ marginRight: 8 }} />
-            <Text style={[styles.quickLinkText, { color: text }]}>Agendar Sesión 1:1</Text>
+            <Ionicons name="calendar" size={20} color={theme === 'dark' ? ACCENT : '#0F172A'} style={{ marginRight: 8 }} />
+            <Text style={[styles.quickLinkText, { color: text }, largeText && { fontSize: 16 }]}>Agendar Sesión 1:1</Text>
           </Pressable>
         </View>
 
@@ -187,20 +219,25 @@ export default function DashboardScreen() {
             styles.card,
             theme === 'light' && styles.cardLight,
             highContrast && styles.cardHC,
+            noBorders && styles.cardNoBorder,
           ]}
           accessibilityLabel={`Progreso general. ${progressPercent} por ciento completado. ${completedModules} módulos completados y ${remainingModules} restantes.`}
         >
-          <Text accessibilityRole="header" style={[styles.cardLabel, { color: sub }]}>Tu Progreso General</Text>
+          <Text accessibilityRole="header" style={[styles.cardLabel, { color: sub }, largeText && { fontSize: 13 }]}>
+            {easyReading ? 'Tu Progreso' : 'Tu Progreso General'}
+          </Text>
           <View style={styles.progressRow}>
-            <View style={styles.fakeCircle}>
+            <View style={[styles.fakeCircle, noBorders && styles.fakeCircleNoBorder]}>
               <Text style={[styles.fakeCircleText, { color: text }]}>{progressPercent}%</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.cardSubtitle, { color: text }]}>
+              <Text style={[styles.cardSubtitle, { color: text }, largeText && { fontSize: 15 }]}>
                 {completedModules} módulos completados · {inProgressModules} en curso
               </Text>
-              <Text style={[styles.secondaryText, { color: sub }]}>
-                {remainingModules} módulos restantes · recomendado en bloques de 10–15 min.
+              <Text style={[styles.secondaryText, { color: sub }, largeText && { fontSize: 13 }]}>
+                {easyReading 
+                  ? `Faltan ${remainingModules} módulos` 
+                  : `${remainingModules} módulos restantes · te recomendamos completarlos en bloques de 10–15 minutos para mejor comprensión y retención del contenido.`}
               </Text>
             </View>
           </View>
@@ -213,6 +250,7 @@ export default function DashboardScreen() {
             styles.highlightCard,
             theme === 'light' && styles.cardLight,
             highContrast && styles.cardHC,
+            noBorders && styles.cardNoBorder,
           ]}
           accessibilityRole="button"
           accessibilityLabel="Continuar aprendizaje. Pulsa para ir a tu siguiente módulo."
@@ -220,30 +258,36 @@ export default function DashboardScreen() {
         >
           <View style={[styles.highlightHeader, theme === 'light' && styles.nextModuleCardLight]}>
             <View style={styles.highlightIcon}>
-              <Ionicons name="flag" size={22} color={ACCENT} />
+            <Ionicons name="flag" size={22} color={theme === 'dark' ? ACCENT : '#0F172A'} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: text }]}>Continúa donde lo dejaste</Text>
-              <Text style={[styles.cardSubtitle, { color: sub }]}>
-                Tu próximo módulo te espera con video-coaching y actividades accionables.
+              <Text style={[styles.cardTitle, { color: text }, largeText && { fontSize: 20 }]}>
+                {easyReading ? 'Continúa aprendiendo' : 'Continúa donde lo dejaste'}
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: sub }, largeText && { fontSize: 15 }]}>
+                {easyReading 
+                  ? 'Tu siguiente módulo está listo.' 
+                  : 'Tu próximo módulo te espera con video-coaching profesional y actividades accionables diseñadas para tu crecimiento.'}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.nextModuleCard, theme === 'light' && styles.nextModuleCardLight]}>
+          <View style={[styles.nextModuleCard, theme === 'light' && styles.nextModuleCardLight, noBorders && styles.nextModuleCardNoBorder]}>
             <View style={styles.nextModuleBadge}>
               <Text style={styles.nextModuleOrder}>{nextModuleOrder}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.cardSubtitle, { color: text }]}>{nextModuleTitle}</Text>
-              <Text style={[styles.secondaryText, { color: sub }]}>
-                ~ {nextModuleDurationMinutes} min · enfócate en un objetivo por sesión.
+              <Text style={[styles.cardSubtitle, { color: text }, largeText && { fontSize: 15 }]}>{nextModuleTitle}</Text>
+              <Text style={[styles.secondaryText, { color: sub }, largeText && { fontSize: 13 }]}>
+                {easyReading 
+                  ? `Duración: ${nextModuleDurationMinutes} minutos` 
+                  : `Aproximadamente ${nextModuleDurationMinutes} minutos · recomendado completar en bloques de 10–15 minutos para mejor retención.`}
               </Text>
             </View>
           </View>
 
           <View style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Continuar aprendizaje</Text>
+          <Text style={[styles.primaryButtonText, largeText && { fontSize: 16 }]}>Continuar aprendizaje</Text>
           </View>
         </Pressable>
 
@@ -253,6 +297,7 @@ export default function DashboardScreen() {
             styles.card,
             theme === 'light' && styles.cardLight,
             highContrast && styles.cardHC,
+            noBorders && styles.cardNoBorder,
           ]}
           accessibilityLabel="Logros y badges de tu progreso."
         >
@@ -261,13 +306,15 @@ export default function DashboardScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Ver todos tus logros"
-              onPress={() => router.push('/achievements')}
+              onPress={() => router.push({ pathname: '/profile', params: { tab: 'achievements' } })}
             >
               <Text style={styles.sectionLink}>Ver todos</Text>
             </Pressable>
           </View>
-          <Text style={[styles.sectionMeta, { color: sub }, largeText && { fontSize: 13 }]}>
-            {earnedCount} de {ACHIEVEMENTS.length} badges · toca “Ver todos” para condiciones.
+          <Text style={[styles.sectionMeta, { color: sub }, largeText && { fontSize: 14 }]}>
+            {easyReading 
+              ? `Tienes ${earnedCount} de ${ACHIEVEMENTS.length} logros` 
+              : `Has desbloqueado ${earnedCount} de ${ACHIEVEMENTS.length} logros disponibles · toca "Ver todos" para conocer las condiciones de cada uno y cómo desbloquearlos.`}
           </Text>
           <View style={styles.achievementsGrid}>
             {ACHIEVEMENTS.slice(0, 4).map((a) => {
@@ -279,8 +326,9 @@ export default function DashboardScreen() {
                     styles.achievementCard,
                     theme === 'light' && styles.achievementCardLight,
                     !earned && styles.achievementCardLocked,
+                    noBorders && styles.achievementCardNoBorder,
                   ]}
-                  accessibilityLabel={`${a.title}. ${earned ? 'Obtenido' : 'No obtenido'}. ${a.points} puntos.`}
+                  accessibilityLabel={`${a.title}. ${earned ? 'Obtenido' : 'No obtenido'}.`}
                 >
                   <View
                     style={[
@@ -297,13 +345,9 @@ export default function DashboardScreen() {
                     />
                   </View>
                   <Text style={[styles.achievementTitle, { color: text }, largeText && { fontSize: 14 }]}>{a.title}</Text>
-                  <Text style={[styles.achievementDescription, { color: sub }]} numberOfLines={largeText ? 2 : 3}>
+                  <Text style={[styles.achievementDescription, { color: sub }, largeText && { fontSize: 12 }]}>
                     {a.description}
                   </Text>
-                  <View style={styles.achievementPointsRow}>
-                    <Ionicons name="ribbon" size={14} color="#9CA3AF" />
-                    <Text style={[styles.achievementPointsText, { color: sub }]}>{a.points} pts</Text>
-                  </View>
                 </View>
               );
             })}
@@ -313,7 +357,7 @@ export default function DashboardScreen() {
         {/* Próximas sesiones */}
         {upcomingSessions.length > 0 && (
           <View
-            style={styles.card}
+            style={[styles.card, theme === 'light' && styles.cardLight, noBorders && styles.cardNoBorder]}
             accessibilityLabel="Próximas sesiones de coaching confirmadas."
           >
           <View style={styles.sectionHeader}>
@@ -330,9 +374,9 @@ export default function DashboardScreen() {
             {upcomingSessions.map((s) => (
               <View key={s.id} style={styles.sessionItem}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.sessionType, { color: text }]}>{s.type}</Text>
+                  <Text style={[styles.sessionType, { color: text }]}>{s.title}</Text>
                   <Text style={[styles.sessionMeta, { color: sub }]}>
-                    {s.dateLabel} · {s.time}
+                    {s.dateLabel} · {s.timeLabel}
                   </Text>
                 </View>
                 <View style={styles.sessionStatusPill}>
@@ -372,7 +416,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 48,
     paddingBottom: 96,
   },
   title: {
@@ -382,7 +426,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   titleLarge: {
-    fontSize: 26,
+    fontSize: 28,
   },
   subtitle: {
     color: '#C7C9E8',
@@ -390,7 +434,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   subtitleLarge: {
-    fontSize: 16,
+    fontSize: 18,
   },
   headerRow: {
     flexDirection: 'row',
@@ -398,12 +442,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
     gap: 12,
-  },
-  quickStatsRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    marginTop: -20,
-    gap: 10,
   },
   profileAvatar: {
     width: 40,
@@ -415,45 +453,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(31,41,55,1)',
   },
-  quickStatCard: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(225, 228, 243, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  quickStatCardLight: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
+  profileAvatarLight: {
+    backgroundColor: 'rgba(15,23,42,0.04)',
     borderColor: 'rgba(15,23,42,0.12)',
   },
-  quickStatIcon: {
-    marginBottom: 4,
-    alignItems: 'flex-end',
-  },
-  quickStatValue: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  quickStatLabel: {
-    color: '#C7C9E8',
-    fontSize: 11,
+  profileAvatarNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   card: {
-    backgroundColor: 'rgba(225, 228, 243, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(225, 228, 243, 0.16)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     marginBottom: 12,
   },
   cardLight: {
     backgroundColor: 'rgba(255,255,255,0.75)',
-    borderColor: 'rgba(15,23,42,0.12)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
   },
   cardHC: {
     borderColor: ACCENT,
+  },
+  cardNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   cardLabel: {
     color: '#C7C9E8',
@@ -475,12 +500,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
-  ctaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    justifyContent: 'space-between',
-  },
   primaryButton: {
     backgroundColor: ACCENT,
     paddingHorizontal: 24,
@@ -494,14 +513,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '600',
     fontSize: 14,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  cardHalf: {
-    flex: 1,
   },
   progressRow: {
     flexDirection: 'row',
@@ -518,96 +529,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  fakeCircleNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
   fakeCircleText: {
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 22,
   },
-  badgesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  achievementsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    rowGap: 12,
-  },
-  achievementCard: {
-    width: '48%',
-    borderRadius: 16,
-    padding: 12,
-    backgroundColor: 'rgba(15,23,42,0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(31,41,55,1)',
-  },
-  achievementCardLight: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderColor: 'rgba(15,23,42,0.12)',
-  },
-  achievementCardLocked: {
-    opacity: 0.6,
-  },
-  achievementIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15,23,42,1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  achievementIconCircleLight: {
-    backgroundColor: 'rgba(2,6,23,0.06)',
-  },
-  achievementTitle: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  achievementDescription: {
-    color: '#A5B4FC',
-    fontSize: 11,
-    marginBottom: 8,
-  },
-  achievementPointsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  achievementPointsText: {
-    color: '#9CA3AF',
-    fontSize: 11,
-  },
-  coachRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  secondaryButton: {
-    marginTop: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: ACCENT,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
   highlightCard: {
-    borderColor: 'rgba(131, 121, 205, 0.6)',
-    backgroundColor: 'rgba(131, 121, 205, 0.15)',
+    borderColor: 'rgba(107, 114, 128, 0.6)',
+    backgroundColor: 'rgba(107, 114, 128, 0.15)',
   },
   highlightHeader: {
     flexDirection: 'row',
@@ -619,7 +552,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(131, 121, 205, 0.25)',
+    backgroundColor: 'rgba(107, 114, 128, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -637,6 +570,10 @@ const styles = StyleSheet.create({
   nextModuleCardLight: {
     backgroundColor: 'rgba(255,255,255,0.85)',
     borderColor: 'rgba(15,23,42,0.12)',
+  },
+  nextModuleCardNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   nextModuleBadge: {
     width: 40,
@@ -670,6 +607,55 @@ const styles = StyleSheet.create({
     color: ACCENT,
     fontSize: 12,
     fontWeight: '500',
+  },
+  achievementsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    rowGap: 12,
+  },
+  achievementCard: {
+    width: '48%',
+    borderRadius: 16,
+    padding: 12,
+    backgroundColor: 'rgba(15,23,42,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(31,41,55,1)',
+  },
+  achievementCardLight: {
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(15,23,42,0.12)',
+  },
+  achievementCardLocked: {
+    opacity: 0.6,
+  },
+  achievementCardNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  achievementIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15,23,42,1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  achievementIconCircleLight: {
+    backgroundColor: 'rgba(2,6,23,0.06)',
+  },
+  achievementTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  achievementDescription: {
+    color: '#A5B4FC',
+    fontSize: 11,
+    marginBottom: 8,
   },
   sessionItem: {
     flexDirection: 'row',

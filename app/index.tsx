@@ -16,7 +16,7 @@ import { useAppSettings } from '@/contexts/AppSettingsContext';
 // Pantalla de inicio de sesión (solo login, sin registro).
 // Más adelante podrás conectar esto con FastAPI/Supabase.
 
-const ACCENT = '#8379CD';
+const ACCENT = '#6B7280'; // Gris medio
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,12 +31,11 @@ export default function LoginScreen() {
     router.replace('/(tabs)');
   };
 
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#000000' : '#FFFFFF';
-  const text = isDark ? '#FFFFFF' : '#000000';
-  const sub = isDark ? '#C7C9E8' : '#4B5563';
-  const inputBg = isDark ? '#000000' : '#FFFFFF';
-  const inputBorder = isDark ? '#FFFFFF' : '#000000';
+  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
+  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
+  const sub = theme === 'dark' ? '#C7C9E8' : '#4B5563';
+  const inputBg = theme === 'dark' ? '#000000' : '#FFFFFF';
+  const inputBorder = theme === 'dark' ? '#FFFFFF' : '#000000';
 
   return (
     <View style={styles.root}>
@@ -130,18 +129,18 @@ export default function LoginScreen() {
               style={[
                 styles.themeToggle,
                 {
-                  borderColor: isDark ? '#FFFFFF' : '#000000',
-                  backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                  borderColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+                  backgroundColor: theme === 'dark' ? '#000000' : '#FFFFFF',
                 },
               ]}
             >
               <Text
                 style={[
                   styles.themeToggleText,
-                  { color: isDark ? '#FFFFFF' : '#000000' },
+                  { color: theme === 'dark' ? '#FFFFFF' : '#000000' },
                 ]}
               >
-                {isDark ? 'Oscuro' : 'Claro'}
+                {theme === 'dark' ? 'Oscuro' : 'Claro'}
               </Text>
             </Pressable>
           </View>

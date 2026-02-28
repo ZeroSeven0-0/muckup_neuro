@@ -1,24 +1,85 @@
+/**
+ * ============================================================================
+ * COURSE DETAIL SCREEN (DETALLE DE CURSO)
+ * ============================================================================
+ * Ubicación: app/course/[id].tsx
+ * Ruta: /course/[id] (pantalla dinámica según ID del módulo)
+ * 
+ * PROPÓSITO:
+ * Esta pantalla muestra el detalle completo de un módulo/curso específico.
+ * Lista todas las lecciones del módulo con su información y permite:
+ * - Ver resumen y transcripción de cada lección
+ * - Reproducir la lección en el player integrado
+ * - Marcar lecciones como completadas
+ * 
+ * PARÁMETROS DE URL:
+ * - id: ID del módulo a mostrar (ej: 'm1', 'm2', 'm3')
+ * 
+ * SECCIONES DE LA PANTALLA:
+ * 1. Header con botón volver, título del módulo y descripción
+ * 2. Barra de progreso del módulo con porcentaje
+ * 3. Lista de tarjetas de lecciones, cada una muestra:
+ *    - Ícono según tipo (video/podcast)
+ *    - Título y duración
+ *    - Badge "Completado" si está completada
+ *    - Resumen de la lección
+ *    - Transcripción (preview)
+ *    - Botón "Reproducir" → abre el player
+ *    - Botón "Marcar completado" → actualiza progreso
+ * 
+ * CÁLCULOS:
+ * - completedCount: Cantidad de lecciones completadas en este módulo
+ * - progressPercent: Porcentaje de progreso del módulo (0-100)
+ * 
+ * NAVEGACIÓN:
+ * - Botón volver → Regresa a Mi Ruta
+ * - Botón "Reproducir" → /player/[lessonId]
+ * 
+ * ACCESIBILIDAD:
+ * - Soporta largeText (texto grande)
+ * - Soporta easyReading (textos simplificados)
+ * - Soporta noBorders (sin bordes)
+ * - Soporta theme dark/light
+ * - Live region para anunciar cambios de progreso
+ * - Cada lección tiene accessibilityLabel descriptivo
+ * 
+ * INTEGRACIÓN CON BACKEND (FUTURO):
+ * - completeLesson hará POST al backend para guardar progreso
+ * - El progreso se sincronizará en tiempo real
+ * ============================================================================
+ */
+
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useCourses } from '@/contexts/CoursesContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+const ACCENT = '#6B7280'; // Color de acento: gris medio
 
 export default function CourseDetailScreen() {
   const router = useRouter();
+  // Obtener el ID del módulo desde la URL
   const { id } = useLocalSearchParams<{ id?: string }>();
   const courseId = Array.isArray(id) ? id[0] : id;
+  
+  // Obtener datos y funciones
   const { modules, completeLesson } = useCourses();
-  const { theme, largeText, easyReading } = useAppSettings();
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#000000' : '#FFFFFF';
-  const text = isDark ? '#FFFFFF' : '#000000';
-  const sub = text;
+  const { theme, largeText, easyReading, noBorders } = useAppSettings();
+  
+  // Colores según el tema
+  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
+  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
+  const sub = theme === 'dark' ? '#C7C9E8' : '#4B5563';
 
+  // Buscar el módulo por ID
   const module = modules.find((m) => m.id === courseId);
+  
+  // Estado para mensajes de accesibilidad (live region)
   const [liveMessage, setLiveMessage] = useState('');
 
+  // Si no se encuentra el módulo, mostrar error
   if (!module) {
     return (
       <View style={[styles.root, { backgroundColor: bg }]}>
@@ -39,27 +100,32 @@ export default function CourseDetailScreen() {
     );
   }
 
+  // ========== CÁLCULOS DE PROGRESO ==========
+  // Contar lecciones completadas
   const completedCount = module.lessons.filter((lesson) => lesson.completed).length;
+  // Calcular porcentaje de progreso
   const progressPercent = module.lessons.length
     ? Math.round((completedCount / module.lessons.length) * 100)
     : 0;
 
   return (
-    <View style={[styles.root, { backgroundColor: bg }]}>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[styles.root, { backgroundColor: bg }]}>
       <View style={styles.headerRow}>
         <Pressable
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Volver"
           hitSlop={8}
-          style={styles.backButton}
+          style={[styles.backButton, noBorders && styles.backButtonNoBorder]}
         >
           <Ionicons name="chevron-back" size={20} color={text} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text accessibilityRole="header" style={[styles.title, { color: text }, largeText && { fontSize: 22 }]}>{module.title}</Text>
           <Text style={[styles.subtitle, { color: sub }, largeText && { fontSize: 15 }]}>
-            {easyReading ? 'Lista de lecciones cortas.' : module.description}
+            {easyReading ? 'Lista de lecciones.' : 'Lista completa de lecciones cortas con contenido práctico y aplicable a tu desarrollo profesional.'}
           </Text>
         </View>
       </View>
@@ -74,16 +140,19 @@ export default function CourseDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Elemento oculto para anunciar cambios de progreso a lectores de pantalla */}
         <Text accessibilityLiveRegion="polite" style={styles.srOnly}>{liveMessage}</Text>
+        
+        {/* Mapear cada lección del módulo */}
         {module.lessons.map((lesson, idx) => (
           <View
             key={lesson.id}
-            style={styles.lessonCard}
+            style={[styles.lessonCard, theme === 'light' && styles.lessonCardLight, noBorders && styles.lessonCardNoBorder]}
             accessible
             accessibilityLabel={`Lección ${idx + 1} de ${module.lessons.length}. ${lesson.title}. ${lesson.mediaType === 'video' ? 'Video' : 'Podcast'}. ${lesson.durationMinutes} minutos. ${lesson.completed ? 'Completado' : 'Pendiente'}.`}
           >
             <View style={styles.lessonHeader}>
-              <View style={styles.lessonIcon}>
+              <View style={[styles.lessonIcon, noBorders && styles.lessonIconNoBorder]}>
                 <Ionicons
                   name={lesson.mediaType === 'video' ? 'videocam' : 'mic'}
                   size={16}
@@ -95,7 +164,9 @@ export default function CourseDetailScreen() {
                   {lesson.title}
                 </Text>
                 <Text style={[styles.lessonMeta, { color: sub }]}>
-                  {lesson.mediaType === 'video' ? 'Video' : 'Podcast'} · {lesson.durationMinutes} min
+                  {easyReading 
+                    ? `${lesson.durationMinutes} min` 
+                    : `${lesson.mediaType === 'video' ? 'Video' : 'Podcast'} · Duración aproximada: ${lesson.durationMinutes} minutos`}
                 </Text>
               </View>
               {lesson.completed && (
@@ -109,22 +180,19 @@ export default function CourseDetailScreen() {
             <Text style={[styles.sectionText, { color: text }]}>{lesson.summary}</Text>
 
             <Text style={[styles.sectionLabel, { color: sub }]}>Transcripción</Text>
-            <Text
-              style={[styles.sectionText, { color: text }]}
-              numberOfLines={easyReading ? 2 : undefined}
-            >
-              {lesson.transcript}
+            <Text style={[styles.sectionText, { color: text }]} numberOfLines={2}>
+              {easyReading ? 'Disponible al reproducir' : 'Transcripción completa disponible en el reproductor integrado'}
             </Text>
 
             <View style={styles.actionsRow}>
               <Pressable
-                style={styles.linkButton}
+                style={[styles.linkButton, noBorders && styles.linkButtonNoBorder]}
                 accessibilityRole="button"
-                accessibilityLabel={`Abrir enlace del ${lesson.mediaType === 'video' ? 'video' : 'podcast'} ${lesson.title}`}
-                accessibilityHint="Se abrirá el contenido en el navegador o app correspondiente."
-                onPress={() => Linking.openURL(lesson.mediaUrl)}
+                accessibilityLabel={`Reproducir ${lesson.mediaType === 'video' ? 'video' : 'podcast'} ${lesson.title} dentro de la app`}
+                accessibilityHint="Abre el reproductor integrado."
+                onPress={() => router.push({ pathname: '/player/[lessonId]', params: { lessonId: lesson.id } })}
               >
-                <Text style={[styles.linkButtonText, { color: text }]}>Abrir enlace</Text>
+                <Text style={[styles.linkButtonText, { color: text }]}>Reproducir</Text>
               </Pressable>
               <Pressable
                 style={[styles.completeButton, lesson.completed && styles.completeButtonDisabled]}
@@ -133,16 +201,19 @@ export default function CourseDetailScreen() {
                 accessibilityHint="Actualiza tu progreso del curso."
                 onPress={() => {
                   if (!lesson.completed) {
+                    // Calcular nuevo progreso
                     const newCompleted = completedCount + 1;
                     const newPercent = module.lessons.length ? Math.round((newCompleted / module.lessons.length) * 100) : 0;
+                    // Actualizar mensaje de accesibilidad
                     setLiveMessage(`Progreso actualizado al ${newPercent} por ciento.`);
+                    // Marcar lección como completada
                     completeLesson(module.id, lesson.id);
                   }
                 }}
                 disabled={lesson.completed}
               >
                 <Text style={styles.completeButtonText}>
-                  {lesson.completed ? 'Listo' : 'Marcar completado'}
+                  {lesson.completed ? 'Listo' : (easyReading ? 'Completar' : 'Marcar completado')}
                 </Text>
               </Pressable>
             </View>
@@ -150,6 +221,7 @@ export default function CourseDetailScreen() {
         ))}
       </ScrollView>
     </View>
+    </>
   );
 }
 
@@ -183,6 +255,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  backButtonNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
   title: {
     fontSize: 20,
     fontWeight: '700',
@@ -201,12 +277,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(131, 121, 205, 0.25)',
+    backgroundColor: 'rgba(107, 114, 128, 0.25)',
   },
   progressBarFill: {
     height: 6,
     borderRadius: 999,
-    backgroundColor: '#8379CD',
+    backgroundColor: ACCENT,
   },
   progressText: {
     fontSize: 11,
@@ -219,8 +295,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(225, 228, 243, 0.16)',
-    backgroundColor: 'rgba(225, 228, 243, 0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  lessonCardLight: {
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
+  },
+  lessonCardNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   lessonHeader: {
     flexDirection: 'row',
@@ -233,9 +317,13 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(131,121,205,0.6)',
+    borderColor: 'rgba(107, 114, 128, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  lessonIconNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   lessonTitle: {
     fontSize: 14,
@@ -246,7 +334,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   completedPill: {
-    backgroundColor: '#8379CD',
+    backgroundColor: ACCENT,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
@@ -272,19 +360,23 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     borderWidth: 1,
-    borderColor: '#8379CD',
+    borderColor: ACCENT,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     minHeight: 40,
     justifyContent: 'center',
   },
+  linkButtonNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
   linkButtonText: {
     fontSize: 12,
     fontWeight: '600',
   },
   completeButton: {
-    backgroundColor: '#8379CD',
+    backgroundColor: ACCENT,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,

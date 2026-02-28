@@ -1,3 +1,48 @@
+/**
+ * ============================================================================
+ * MI RUTA SCREEN (PANTALLA DE CURSOS)
+ * ============================================================================
+ * Ubicación: app/(tabs)/explore.tsx
+ * Ruta: /(tabs)/explore (segunda tab del menú inferior)
+ * 
+ * PROPÓSITO:
+ * Esta pantalla muestra todos los módulos/cursos disponibles en la app.
+ * Permite al usuario ver su progreso en cada curso y acceder a las lecciones.
+ * 
+ * SECCIONES DE LA PANTALLA:
+ * 1. Header con título "Mi Ruta" y botón de volver
+ * 2. Subtítulo explicativo sobre el aprendizaje progresivo
+ * 3. Lista de tarjetas de módulos, cada una muestra:
+ *    - Título y descripción del módulo
+ *    - Contadores de videos y podcasts
+ *    - Barra de progreso con porcentaje
+ *    - Siguiente lección pendiente (si hay)
+ *    - Botón "Ver lecciones" para ir al detalle
+ * 
+ * CÁLCULOS POR MÓDULO:
+ * - nextLesson: Primera lección no completada del módulo
+ * - completedCount: Cantidad de lecciones completadas
+ * - progressPercent: Porcentaje de lecciones completadas (0-100)
+ * - videoCount: Cantidad de lecciones tipo 'video'
+ * - podcastCount: Cantidad de lecciones tipo 'podcast'
+ * 
+ * NAVEGACIÓN:
+ * - Botón volver → Regresa a la pantalla anterior o al dashboard
+ * - Botón "Ver lecciones" → /course/[id] (detalle del módulo)
+ * 
+ * ACCESIBILIDAD:
+ * - Soporta largeText (texto grande)
+ * - Soporta easyReading (textos simplificados)
+ * - Soporta noBorders (sin bordes)
+ * - Soporta theme dark/light
+ * - Barra de progreso con accessibilityRole="progressbar"
+ * 
+ * INTEGRACIÓN CON BACKEND (FUTURO):
+ * - modules vendrá de la API (ya está en CoursesContext)
+ * - El progreso se sincronizará con el backend al completar lecciones
+ * ============================================================================
+ */
+
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useCourses } from '@/contexts/CoursesContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,16 +50,19 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-const ACCENT = '#8379CD';
+const ACCENT = '#6B7280'; // Color de acento: gris medio
 
 export default function MiRutaScreen() {
   const router = useRouter();
-  const { theme, largeText, easyReading } = useAppSettings();
+  // Obtener configuraciones de accesibilidad
+  const { theme, largeText, easyReading, noBorders } = useAppSettings();
+  // Obtener todos los módulos/cursos
   const { modules } = useCourses();
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#000000' : '#FFFFFF';
-  const text = isDark ? '#FFFFFF' : '#000000';
-  const sub = text;
+  
+  // Colores según el tema
+  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
+  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
+  const sub = theme === 'dark' ? '#C7C9E8' : '#4B5563';
 
   return (
     <View style={[styles.root, { backgroundColor: bg }]}>
@@ -39,28 +87,33 @@ export default function MiRutaScreen() {
           <Text accessibilityRole="header" style={[styles.title, { color: text }, largeText && { fontSize: 24 }]}>Mi Ruta</Text>
         </View>
         <Text style={[styles.subtitle, { color: sub }, largeText && { fontSize: 16 }]}>
-          {easyReading ? 'Avanza a tu ritmo.' : 'Avanza módulo a módulo. Todo está diseñado para ir a tu ritmo.'}
+          {easyReading ? 'Avanza a tu ritmo.' : 'Avanza módulo a módulo a tu propio ritmo. Todo el contenido está diseñado para que aprendas de forma progresiva y sin presiones.'}
         </Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        accessibilityRole="scrollview"
       >
+        {/* Mapear cada módulo y mostrar su tarjeta */}
         {modules.map((module) => {
+          // ========== CÁLCULOS POR MÓDULO ==========
+          // Buscar la primera lección no completada
           const nextLesson = module.lessons.find((l) => !l.completed);
+          // Contar lecciones completadas
           const completedCount = module.lessons.filter((lesson) => lesson.completed).length;
+          // Calcular porcentaje de progreso
           const progressPercent = module.lessons.length
             ? Math.round((completedCount / module.lessons.length) * 100)
             : 0;
+          // Contar videos y podcasts
           const videoCount = module.lessons.filter((lesson) => lesson.mediaType === 'video').length;
           const podcastCount = module.lessons.filter((lesson) => lesson.mediaType === 'podcast').length;
 
           return (
             <View
               key={module.id}
-              style={styles.card}
+              style={[styles.card, theme === 'light' && styles.cardLight, noBorders && styles.cardNoBorder]}
             >
               <Text style={[styles.moduleTitle, { color: text }, largeText && { fontSize: 18 }]}>{module.title}</Text>
               <Text style={[styles.moduleDescription, { color: sub }, largeText && { fontSize: 14 }]}>
@@ -124,18 +177,22 @@ export default function MiRutaScreen() {
                     </Text>
                     <Text style={[styles.nextTitle, { color: text }, largeText && { fontSize: 16 }]}>{nextLesson.title}</Text>
                     <Text style={[styles.nextMeta, { color: text }, largeText && { fontSize: 12 }]}>
-                      ~ {nextLesson.durationMinutes} min · {nextLesson.mediaType === 'video' ? 'Video corto' : 'Podcast corto'}
+                      {easyReading 
+                        ? `${nextLesson.durationMinutes} minutos` 
+                        : `Aproximadamente ${nextLesson.durationMinutes} minutos · ${nextLesson.mediaType === 'video' ? 'Video corto y directo' : 'Podcast corto y práctico'} para tu aprendizaje.`}
                     </Text>
                   </View>
                   {/* Botón de acceso único a la lista de lecciones */}
                 </View>
               ) : (
                 <Text style={[styles.completedText, { color: text }, largeText && { fontSize: 13 }]}>
-                  Módulo completado. Revisa tus logros en el panel de progreso.
+                  {easyReading 
+                    ? '¡Módulo completado!' 
+                    : '¡Felicidades! Has completado este módulo. Revisa tus logros desbloqueados en el panel de progreso del inicio.'}
                 </Text>
               )}
               <Pressable
-                style={styles.secondaryPill}
+                style={[styles.secondaryPill, noBorders && styles.secondaryPillNoBorder]}
                 accessibilityRole="button"
                 accessibilityLabel={`Abrir lista de lecciones de ${module.title}`}
                 accessibilityHint="Abre la lista completa de lecciones con transcripción."
@@ -189,16 +246,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: 'rgba(225, 228, 243, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(225, 228, 243, 0.16)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     marginBottom: 12,
   },
   cardLight: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderColor: 'rgba(15,23,42,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
+  },
+  cardNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   moduleTitle: {
     color: '#FFFFFF',
@@ -222,7 +283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(131,121,205,0.3)',
+    backgroundColor: 'rgba(107, 114, 128, 0.3)',
   },
   mediaText: {
     color: '#FFFFFF',
@@ -238,7 +299,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(131, 121, 205, 0.25)',
+    backgroundColor: 'rgba(107, 114, 128, 0.25)',
   },
   progressBarFill: {
     height: 6,
@@ -295,6 +356,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  secondaryPillNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   secondaryPillText: {
     fontWeight: '600',
