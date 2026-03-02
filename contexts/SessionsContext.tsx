@@ -1,44 +1,48 @@
 /**
  * ============================================================================
- * SESSIONS CONTEXT
+ * SESSIONS CONTEXT (CONTEXTO DE SESIONES DE COACHING)
  * ============================================================================
- * Ubicación: contexts/SessionsContext.tsx
  * 
  * PROPÓSITO:
- * Este archivo maneja las sesiones de coaching/mentoría entre usuarios y coaches.
- * Permite agendar sesiones, ver sesiones próximas, y trackear su estado.
- * 
- * FLUJO DE AGENDAMIENTO:
- * 1. Usuario propone una fecha/hora en la pantalla de sesiones (app/sessions.tsx)
- * 2. La sesión se crea con status: 'Pendiente'
- * 3. El coach revisa y aprueba/modifica la sesión (esto será en el backend)
- * 4. Cuando se aprueba, el status cambia a 'Confirmada'
+ * Context de React que maneja las sesiones de coaching 1:1 entre el usuario
+ * y su coach. Permite agregar, listar y gestionar sesiones agendadas.
  * 
  * ESTRUCTURA DE DATOS:
- * - Session (Sesión):
- *   - id: Identificador único (ej: 's1', 's2')
- *   - title: Nombre de la sesión (ej: "Sesión 1: Estrategia")
- *   - dateLabel: Fecha en formato legible (ej: "Jueves 14 de marzo")
- *   - timeLabel: Hora en formato legible (ej: "18:00h")
- *   - status: 'Confirmada' o 'Pendiente'
- *   - startISO: Fecha/hora de inicio en formato ISO (para ordenar y comparar)
- *   - endISO: Fecha/hora de fin en formato ISO
  * 
- * CÓMO FUNCIONA:
- * 1. Los datos iniciales están en INITIAL_SESSIONS
- * 2. El SessionsProvider envuelve la app y hace disponibles los datos
- * 3. Cualquier componente puede usar useSessions() para acceder a:
- *    - sessions: Array con todas las sesiones
- *    - addSession(session): Función para agregar una nueva sesión
+ * Session (Sesión):
+ * - id: Identificador único de la sesión (ej: 's1', 's2')
+ * - title: Título de la sesión (ej: 'Sesión 1: Estrategia')
+ * - dateLabel: Fecha en formato legible (ej: 'Jueves 14 de marzo')
+ * - timeLabel: Hora en formato legible (ej: '18:00h')
+ * - status: Estado de la sesión (ver SessionStatus)
+ * - startISO: (opcional) Fecha/hora de inicio en formato ISO
+ * - endISO: (opcional) Fecha/hora de fin en formato ISO
+ * - notes: (opcional) Notas adicionales sobre la sesión
  * 
- * CÓMO USAR EN OTROS COMPONENTES:
- * ```tsx
+ * SessionStatus (Estados posibles):
+ * - 'Confirmada': Sesión confirmada por ambas partes
+ * - 'Pendiente': Esperando confirmación del coach
+ * - 'Cambio sugerido': Coach sugirió cambio de fecha/hora
+ * 
+ * FUNCIONALIDAD:
+ * 
+ * 1. sessions (Array<Session>)
+ *    - Lista de todas las sesiones agendadas
+ *    - Ordenadas con las más recientes primero
+ * 
+ * 2. addSession(session: Session)
+ *    - Agrega una nueva sesión a la lista
+ *    - Previene duplicados (compara title, dateLabel, timeLabel)
+ *    - Agrega al inicio del array (más recientes primero)
+ * 
+ * USO EN COMPONENTES:
+ * 
  * import { useSessions } from '@/contexts/SessionsContext';
  * 
- * function MiComponente() {
+ * function MyComponent() {
  *   const { sessions, addSession } = useSessions();
  *   
- *   // Ver todas las sesiones
+ *   // Listar sesiones
  *   sessions.forEach(session => {
  *     console.log(session.title, session.status);
  *   });
@@ -46,64 +50,67 @@
  *   // Agregar nueva sesión
  *   addSession({
  *     id: 's2',
- *     title: 'Sesión 2: Seguimiento',
+ *     title: 'Sesión 2: Entrevistas',
  *     dateLabel: 'Lunes 18 de marzo',
- *     timeLabel: '19:00h',
- *     status: 'Pendiente',
- *     startISO: '2026-03-18T19:00:00.000Z',
- *     endISO: '2026-03-18T20:00:00.000Z',
+ *     timeLabel: '10:00h',
+ *     status: 'Pendiente'
  *   });
  * }
- * ```
+ * 
+ * DÓNDE SE USA:
+ * - app/(tabs)/index.tsx (Dashboard) - Muestra próximas sesiones
+ * - app/sessions.tsx - Lista completa de sesiones
+ * - app/(tabs)/agenda.tsx - Formulario para agendar nuevas sesiones
+ * 
+ * DATOS INICIALES:
+ * INITIAL_SESSIONS contiene una sesión de ejemplo. En producción,
+ * estos datos deberían venir del backend.
  * 
  * INTEGRACIÓN CON BACKEND (FUTURO):
- * Cuando conectes con el backend de Node.js + Supabase:
- * 1. Reemplaza INITIAL_SESSIONS con un fetch a tu API
+ * Cuando conectes con Node.js + Supabase:
+ * 1. Reemplaza INITIAL_SESSIONS con fetch a tu API
  * 2. Modifica addSession para hacer POST al backend
- * 3. Agrega función updateSessionStatus para que el coach apruebe/rechace
- * 4. Implementa notificaciones cuando una sesión cambie de estado
- * 5. Agrega validación de disponibilidad de horarios
- * 6. Considera agregar cancelación de sesiones
+ * 3. Agrega funciones para actualizar/eliminar sesiones
+ * 4. Implementa sincronización en tiempo real (Supabase Realtime)
+ * 5. Agrega notificaciones cuando el coach confirme/cambie sesiones
  * 
- * ROLES Y PERMISOS:
- * - Usuario: Puede proponer sesiones (status: 'Pendiente')
- * - Coach: Puede aprobar/modificar/rechazar sesiones propuestas
- * - Admin: Puede ver todas las sesiones de todos los usuarios
- * ============================================================================
+ * FLUJO DE AGENDAMIENTO:
+ * 1. Usuario propone fecha/hora en app/(tabs)/agenda.tsx
+ * 2. Se crea sesión con status 'Pendiente'
+ * 3. Coach recibe notificación (backend)
+ * 4. Coach confirma o sugiere cambio
+ * 5. Status cambia a 'Confirmada' o 'Cambio sugerido'
+ * 6. Usuario recibe notificación del cambio de estado
  */
 
 import React, { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 // Estados posibles de una sesión
-export type SessionStatus = 'Confirmada' | 'Pendiente';
+export type SessionStatus = 'Confirmada' | 'Pendiente' | 'Cambio sugerido';
 
-// Estructura de una sesión
+// Estructura de una sesión de coaching
 export type Session = {
-  id: string;              // ID único (ej: 's1')
-  title: string;           // Nombre de la sesión
-  dateLabel: string;       // Fecha legible (ej: "Jueves 14 de marzo")
-  timeLabel: string;       // Hora legible (ej: "18:00h")
-  status: SessionStatus;   // 'Confirmada' o 'Pendiente'
-  startISO: string;        // Fecha/hora inicio ISO (para ordenar)
-  endISO: string;          // Fecha/hora fin ISO
+  id: string;                    // ID único
+  title: string;                 // Título de la sesión
+  dateLabel: string;             // Fecha legible (ej: 'Jueves 14 de marzo')
+  timeLabel: string;             // Hora legible (ej: '18:00h')
+  status: SessionStatus;         // Estado de la sesión
+  startISO?: string;             // Fecha/hora inicio ISO (opcional)
+  endISO?: string;               // Fecha/hora fin ISO (opcional)
+  notes?: string;                // Notas adicionales (opcional)
 };
 
-// Estado global del contexto
+// Tipo del contexto
 type SessionsState = {
-  sessions: Session[];                  // Todas las sesiones
-  addSession: (session: Session) => void;  // Agregar nueva sesión
+  sessions: Session[];                    // Lista de sesiones
+  addSession: (session: Session) => void; // Función para agregar sesión
 };
 
+// Crear el contexto
 const SessionsContext = createContext<SessionsState | undefined>(undefined);
 
-/**
- * ============================================================================
- * DATOS INICIALES DE SESIONES
- * ============================================================================
- * Sesión de ejemplo para mostrar cómo funciona el sistema.
- * En producción, estas vendrán del backend según el usuario logueado.
- * ============================================================================
- */
+// Sesiones iniciales de ejemplo
+// TODO: Reemplazar con datos del backend
 const INITIAL_SESSIONS: Session[] = [
   {
     id: 's1',
@@ -117,40 +124,36 @@ const INITIAL_SESSIONS: Session[] = [
 ];
 
 /**
- * ============================================================================
- * PROVIDER COMPONENT
- * ============================================================================
- * Este componente envuelve la app y hace disponibles los datos de sesiones.
- * Ya está configurado en app/_layout.tsx - no necesitas modificar esto.
- * ============================================================================
+ * Provider que envuelve la app y proporciona las sesiones
+ * Se usa en app/_layout.tsx
  */
 export function SessionsProvider({ children }: { children: ReactNode }) {
-  // Estado local que guarda todas las sesiones
+  // Estado con las sesiones
   const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
 
   /**
-   * Función para agregar una nueva sesión
-   * @param session - Objeto Session completo con todos los campos
-   * 
-   * CÓMO FUNCIONA:
-   * 1. Verifica si ya existe una sesión con la misma fecha/hora y título
-   * 2. Si existe, no la agrega (evita duplicados)
-   * 3. Si no existe, la agrega al inicio del array (más recientes primero)
-   * 
-   * NOTA: Cuando conectes con el backend, esta función hará un POST
-   * a tu API y luego actualizará el estado local con la respuesta.
+   * Agrega una nueva sesión a la lista
+   * Previene duplicados comparando title, dateLabel y timeLabel
    */
   const addSession = (session: Session) => {
     setSessions((prev) => {
-      // Evitar duplicados: verifica si ya existe una sesión igual
-      const exists = prev.some((s) => s.startISO === session.startISO && s.title === session.title);
+      // Verificar si ya existe una sesión idéntica
+      const exists = prev.some(
+        (s) =>
+          s.title === session.title &&
+          s.dateLabel === session.dateLabel &&
+          s.timeLabel === session.timeLabel
+      );
+      
+      // Si existe, no agregar duplicado
       if (exists) return prev;
-      // Agregar al inicio del array (más recientes primero)
+      
+      // Agregar al inicio (más recientes primero)
       return [session, ...prev];
     });
   };
 
-  // useMemo optimiza el rendimiento - solo recalcula cuando sessions cambia
+  // Memoizar el valor del contexto para evitar re-renders innecesarios
   const value = useMemo(
     () => ({
       sessions,
@@ -163,16 +166,8 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * ============================================================================
- * HOOK PERSONALIZADO
- * ============================================================================
- * Usa este hook en cualquier componente para acceder a las sesiones.
- * 
- * EJEMPLO:
- * ```tsx
- * const { sessions, addSession } = useSessions();
- * ```
- * ============================================================================
+ * Hook personalizado para acceder a las sesiones
+ * Lanza error si se usa fuera del Provider
  */
 export function useSessions() {
   const ctx = useContext(SessionsContext);

@@ -69,12 +69,13 @@
  */
 
 import { ACHIEVEMENTS } from '@/constants/b2c-mock';
+import { getCommonStyles, getTextStyles, getThemeColors } from '@/constants/globalStyles';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useCourses } from '@/contexts/CoursesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 const ACCENT = '#6B7280'; // Color de acento: gris medio
 
@@ -100,6 +101,8 @@ export default function ProfileScreen() {
     setEasyReading,
     largeText,
     setLargeText,
+    textScale,
+    setTextScale,
     haptics,
     setHaptics,
     noBorders,
@@ -145,13 +148,11 @@ export default function ProfileScreen() {
   const [location, setLocation] = useState('Ciudad de México, MX');
   const [linkedin, setLinkedin] = useState('https://www.linkedin.com/in/tu-perfil');
 
-  // Colores según el tema
-  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
-  const textColor = theme === 'dark' ? '#FFFFFF' : '#0F172A';
-  const labelColor = theme === 'dark' ? '#C7C9E8' : '#4B5563';
+  // Estilos globales
+  const commonStyles = getCommonStyles(theme, noBorders);
+  const textStyles = getTextStyles(textScale);
+  const colors = getThemeColors(theme);
   const helpColor = theme === 'dark' ? '#9CA3AF' : '#6B7280';
-  const inputBg = theme === 'dark' ? '#000000' : '#FFFFFF';
-  const inputBorder = theme === 'dark' ? '#FFFFFF' : '#000000';
 
   /**
    * Guarda los cambios del perfil
@@ -171,32 +172,32 @@ export default function ProfileScreen() {
         return (
           <View style={styles.form}>
             {/* Formulario de información personal */}
-            <Text style={[styles.label, { color: labelColor }]}>Nombre</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Nombre</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={name}
               onChangeText={setName}
               placeholder="Tu nombre"
               placeholderTextColor="#7C7FA5"
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Correo (solo lectura)</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Correo (solo lectura)</Text>
             <TextInput
-              style={[styles.input, styles.inputDisabled, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, styles.inputDisabled, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={email}
               editable={false}
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Rol</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Rol</Text>
             <TextInput
-              style={[styles.input, styles.inputDisabled, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, styles.inputDisabled, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={role}
               editable={false}
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Biografía</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Biografía</Text>
             <TextInput
-              style={[styles.input, styles.textarea, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, styles.textarea, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={bio}
               onChangeText={setBio}
               placeholder="Cuenta brevemente quién eres y qué estás buscando."
@@ -205,9 +206,9 @@ export default function ProfileScreen() {
               numberOfLines={4}
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Objetivo profesional</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Objetivo profesional</Text>
             <TextInput
-              style={[styles.input, styles.textarea, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, styles.textarea, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={goal}
               onChangeText={setGoal}
               placeholder="Ejemplo: transicionar a un rol de datos en el sector salud."
@@ -215,27 +216,27 @@ export default function ProfileScreen() {
               multiline
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Áreas de interés</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Áreas de interés</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={interests}
               onChangeText={setInterests}
               placeholder="Ejemplo: UX, producto, data, etc."
               placeholderTextColor="#7C7FA5"
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>Ubicación</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Ubicación</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={location}
               onChangeText={setLocation}
               placeholder="Ciudad, País"
               placeholderTextColor="#7C7FA5"
             />
 
-            <Text style={[styles.label, { color: labelColor }]}>LinkedIn</Text>
+            <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>LinkedIn</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }, noBorders && styles.inputNoBorder]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontSize: 16 * textScale }, noBorders && styles.inputNoBorder]}
               value={linkedin}
               onChangeText={setLinkedin}
               placeholder="URL de tu perfil de LinkedIn"
@@ -243,13 +244,29 @@ export default function ProfileScreen() {
               autoCapitalize="none"
             />
 
-            <View style={styles.divider} />
+            <Pressable onPress={handleSave} style={({ pressed }) => [
+              styles.primaryButton, 
+              theme === 'light' && styles.primaryButtonLight,
+              theme === 'light' && noBorders && styles.primaryButtonLightNoBorder,
+              theme === 'dark' && noBorders && styles.primaryButtonDarkNoBorder,
+              pressed && { opacity: 0.9 }
+            ]}>
+              <Text style={[styles.primaryButtonText, { fontSize: 15 * textScale }, theme === 'light' && styles.primaryButtonTextLight]}>Guardar cambios</Text>
+            </Pressable>
+          </View>
+        );
 
-            <Text style={[styles.sectionTitle, { color: textColor }, largeText && { fontSize: 18 }]}>Tema</Text>
+      case 'accessibility':
+        return (
+          <View style={styles.form}>
+            <Text style={[styles.sectionHelp, { color: helpColor, fontSize: 12 * textScale }]}>
+              {easyReading ? 'Ajusta estas opciones según tus necesidades.' : 'Estas opciones te ayudan a adaptar la experiencia. El lector de pantalla se configura en tu dispositivo.'}
+            </Text>
+
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Tema de la app</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Tema de la app</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
                   {easyReading ? 'Usa oscuro o claro.' : 'Alterna entre modo oscuro e interfaz clara.'}
                 </Text>
               </View>
@@ -262,29 +279,16 @@ export default function ProfileScreen() {
                   noBorders && styles.themeToggleNoBorder,
                 ]}
               >
-                <Text style={[styles.themeToggleText, theme === 'light' ? { color: '#000000' } : { color: '#FFFFFF' }, largeText && { fontSize: 14 }]}>
+                <Text style={[styles.themeToggleText, theme === 'light' ? { color: '#000000' } : { color: '#FFFFFF' }, { fontSize: 13 * textScale }]}>
                   {theme === 'dark' ? 'Oscuro' : 'Claro'}
                 </Text>
               </Pressable>
             </View>
 
-            <Pressable onPress={handleSave} style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.9 }]}>
-              <Text style={styles.primaryButtonText}>Guardar cambios</Text>
-            </Pressable>
-          </View>
-        );
-
-      case 'accessibility':
-        return (
-          <View style={styles.form}>
-            <Text style={[styles.sectionHelp, { color: helpColor }, largeText && { fontSize: 13 }]}>
-              {easyReading ? 'Ajusta estas opciones según tus necesidades.' : 'Estas opciones te ayudan a adaptar la experiencia. El lector de pantalla se configura en tu dispositivo.'}
-            </Text>
-
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Modo alto contraste</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Modo alto contraste</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
                   {easyReading ? 'Aumenta contraste.' : 'Potencia colores y contornos para mejorar la visibilidad.'}
                 </Text>
               </View>
@@ -298,8 +302,8 @@ export default function ProfileScreen() {
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Lectura fácil</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Lectura fácil</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
                   {easyReading ? 'Reduce textos.' : 'Simplifica textos técnicos y descripciones largas.'}
                 </Text>
               </View>
@@ -311,25 +315,48 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <View style={styles.switchRow}>
+            {/* Control de escala de texto con botones + y - */}
+            <View style={styles.textScaleContainer}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Texto grande</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
-                  {easyReading ? 'Texto más grande.' : 'Aumenta el tamaño de la tipografía en toda la app.'}
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Tamaño de texto</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
+                  {easyReading ? 'Ajusta el tamaño.' : 'Ajusta el tamaño del texto con precisión'}
                 </Text>
               </View>
-              <Switch
-                value={largeText}
-                onValueChange={setLargeText}
-                thumbColor={largeText ? '#FFFFFF' : '#6B7280'}
-                trackColor={{ false: '#4B5563', true: ACCENT }}
-              />
+              <View style={styles.textScaleControls}>
+                <Pressable
+                  style={[styles.scaleButton, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
+                  onPress={() => {
+                    const newScale = Math.max(0.8, textScale - 0.1);
+                    setTextScale(Number(newScale.toFixed(1)));
+                  }}
+                  accessibilityLabel="Disminuir tamaño de texto"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.scaleButtonText, { color: colors.text }]}>-</Text>
+                </Pressable>
+                <View style={styles.scaleIndicator}>
+                  <Text style={[styles.scaleSmallA, { color: colors.text }]}>A</Text>
+                  <Text style={[styles.scaleLargeA, { color: colors.text }]}>A</Text>
+                </View>
+                <Pressable
+                  style={[styles.scaleButton, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
+                  onPress={() => {
+                    const newScale = Math.min(1.5, textScale + 0.1);
+                    setTextScale(Number(newScale.toFixed(1)));
+                  }}
+                  accessibilityLabel="Aumentar tamaño de texto"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.scaleButtonText, { color: colors.text }]}>+</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Feedback háptico</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Feedback háptico</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
                   {easyReading ? 'Vibración leve.' : 'Activa pequeñas vibraciones al completar acciones clave.'}
                 </Text>
               </View>
@@ -343,8 +370,8 @@ export default function ProfileScreen() {
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: labelColor }]}>Sin bordes</Text>
-                <Text style={[styles.switchHelp, { color: helpColor }, largeText && { fontSize: 12 }]}>
+                <Text style={[styles.label, { color: colors.sub, fontSize: 13 * textScale }]}>Sin bordes</Text>
+                <Text style={[styles.switchHelp, { color: helpColor, fontSize: 11 * textScale }]}>
                   {easyReading ? 'Quita bordes de tarjetas.' : 'Elimina los bordes de todas las tarjetas y contenedores.'}
                 </Text>
               </View>
@@ -361,7 +388,7 @@ export default function ProfileScreen() {
       case 'achievements':
         return (
           <View style={styles.form}>
-            <Text style={[styles.sectionHelp, { color: helpColor }, largeText && { fontSize: 13 }]}>
+            <Text style={[styles.sectionHelp, { color: helpColor, fontSize: 12 * textScale }]}>
               Has desbloqueado {earnedCount} de {ACHIEVEMENTS.length} badges.
             </Text>
 
@@ -378,22 +405,26 @@ export default function ProfileScreen() {
                       noBorders && styles.achievementCardNoBorder,
                     ]}
                   >
-                    <View style={styles.iconCircle}>
-                      <Ionicons name={a.icon as any} size={20} color={earned ? '#FFFFFF' : theme === 'dark' ? '#9CA3AF' : '#64748B'} />
+                    <View style={[
+                      styles.iconCircle,
+                      theme === 'light' && styles.iconCircleLight,
+                      earned && theme === 'light' && styles.iconCircleEarnedLight,
+                    ]}>
+                      <Ionicons name={a.icon as any} size={20} color={earned ? (theme === 'dark' ? '#FFFFFF' : '#000000') : (theme === 'dark' ? '#9CA3AF' : '#666666')} />
                     </View>
-                    <Text style={[styles.achievementTitle, { color: textColor }]}>{a.title}</Text>
-                    <Text style={[styles.achievementDesc, { color: labelColor }]}>
+                    <Text style={[styles.achievementTitle, { color: colors.text, fontSize: 13 * textScale }]}>{a.title}</Text>
+                    <Text style={[styles.achievementDesc, { color: colors.sub, fontSize: 11 * textScale }]}>
                       {a.description}
                     </Text>
 
                     <View style={[styles.conditionBox, theme === 'light' && styles.conditionBoxLight, noBorders && styles.conditionBoxNoBorder]}>
-                      <Text style={[styles.conditionLabel, { color: labelColor }]}>Condición</Text>
-                      <Text style={[styles.conditionText, { color: textColor }]}>{a.condition}</Text>
+                      <Text style={[styles.conditionLabel, { color: colors.sub, fontSize: 10 * textScale }]}>Condición</Text>
+                      <Text style={[styles.conditionText, { color: colors.text, fontSize: 11 * textScale }]}>{a.condition}</Text>
                     </View>
 
                     {earned && (
-                      <View style={styles.earnedPill}>
-                        <Text style={styles.earnedPillText}>Obtenido</Text>
+                      <View style={[styles.earnedPill, theme === 'light' && styles.earnedPillLight]}>
+                        <Text style={[styles.earnedPillText, { fontSize: 10 * textScale }, theme === 'light' && styles.earnedPillTextLight]}>Obtenido</Text>
                       </View>
                     )}
                   </View>
@@ -408,8 +439,8 @@ export default function ProfileScreen() {
           <View style={styles.form}>
             <View style={[styles.comingSoonBox, theme === 'light' && styles.comingSoonBoxLight, noBorders && styles.comingSoonBoxNoBorder]}>
               <Ionicons name="megaphone-outline" size={48} color={theme === 'dark' ? ACCENT : '#0F172A'} />
-              <Text style={[styles.comingSoonTitle, { color: textColor }, largeText && { fontSize: 20 }]}>Próximamente</Text>
-              <Text style={[styles.comingSoonText, { color: helpColor }, largeText && { fontSize: 14 }]}>
+              <Text style={[styles.comingSoonTitle, { color: colors.text, fontSize: 18 * textScale }]}>Próximamente</Text>
+              <Text style={[styles.comingSoonText, { color: helpColor, fontSize: 13 * textScale }]}>
                 Estamos trabajando en un canal de denuncias seguro y confidencial para reportar cualquier situación inapropiada.
               </Text>
             </View>
@@ -422,44 +453,62 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: bg }]}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
+        {/* Header con logotipo */}
+        <View style={styles.topBar}>
+          <Image 
+            source={theme === 'dark' 
+              ? require('@/assets/images/logo.png')
+              : require('@/assets/images/logo-light.png')
+            }
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel="Logotipo Neurogestión"
+          />
+        </View>
+        
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.backButton, theme === 'light' && { borderColor: '#000000' }, noBorders && styles.buttonNoBorder]}>
-            <Ionicons name="chevron-back" size={20} color={textColor} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </Pressable>
-          <Text style={[styles.title, { color: textColor }, largeText && { fontSize: 24 }]}>Tu perfil</Text>
+          <Text style={[styles.title, { color: colors.text, fontSize: 22 * textScale }]}>Tu perfil</Text>
           <Pressable onPress={() => setActiveTab('achievements')} hitSlop={8} style={[styles.achievementsBadge, theme === 'light' && { borderColor: '#000000' }, noBorders && styles.buttonNoBorder]}>
-            <Ionicons name="trophy" size={16} color={textColor} />
-            <Text style={[styles.achievementsBadgeText, { color: textColor }]}>{earnedCount}</Text>
+            <Ionicons name="trophy" size={16} color={colors.text} />
+            <Text style={[styles.achievementsBadgeText, { color: colors.text, fontSize: 12 * textScale }]}>{earnedCount}</Text>
           </Pressable>
         </View>
 
         <View style={styles.avatarWrapper}>
-          <View style={[styles.avatarCircle, noBorders && styles.avatarCircleNoBorder]}>
-            <Ionicons name="person" size={40} color="#9CA3AF" />
+          <View style={[styles.avatarCircle, theme === 'light' && styles.avatarCircleLight, noBorders && styles.avatarCircleNoBorder]}>
+            <Ionicons name="person" size={40} color={theme === 'dark' ? '#9CA3AF' : '#000000'} />
           </View>
         </View>
 
         <View style={styles.tabsContainer}>
           <Pressable onPress={() => setActiveTab('settings')} style={[styles.tab, activeTab === 'settings' && styles.tabActive, noBorders && activeTab === 'settings' && styles.tabActiveNoBorder]}>
             <Ionicons name="settings-outline" size={20} color={activeTab === 'settings' ? (theme === 'dark' ? '#FFFFFF' : '#0F172A') : helpColor} />
-            <Text style={[styles.tabText, { color: activeTab === 'settings' ? textColor : helpColor }]}>Ajustes</Text>
+            <Text style={[styles.tabText, { color: activeTab === 'settings' ? colors.text : helpColor, fontSize: 11 * textScale }]}>Ajustes</Text>
           </Pressable>
 
           <Pressable onPress={() => setActiveTab('accessibility')} style={[styles.tab, activeTab === 'accessibility' && styles.tabActive, noBorders && activeTab === 'accessibility' && styles.tabActiveNoBorder]}>
             <Ionicons name="eye-outline" size={20} color={activeTab === 'accessibility' ? (theme === 'dark' ? '#FFFFFF' : '#0F172A') : helpColor} />
-            <Text style={[styles.tabText, { color: activeTab === 'accessibility' ? textColor : helpColor }]}>Accesibilidad</Text>
+            <Text style={[styles.tabText, { color: activeTab === 'accessibility' ? colors.text : helpColor, fontSize: 11 * textScale }]}>Accesibilidad</Text>
           </Pressable>
 
           <Pressable onPress={() => setActiveTab('achievements')} style={[styles.tab, activeTab === 'achievements' && styles.tabActive, noBorders && activeTab === 'achievements' && styles.tabActiveNoBorder]}>
             <Ionicons name="trophy-outline" size={20} color={activeTab === 'achievements' ? (theme === 'dark' ? '#FFFFFF' : '#0F172A') : helpColor} />
-            <Text style={[styles.tabText, { color: activeTab === 'achievements' ? textColor : helpColor }]}>Logros</Text>
+            <Text style={[styles.tabText, { color: activeTab === 'achievements' ? colors.text : helpColor, fontSize: 11 * textScale }]}>Logros</Text>
           </Pressable>
 
           <Pressable onPress={() => setActiveTab('reports')} style={[styles.tab, activeTab === 'reports' && styles.tabActive, noBorders && activeTab === 'reports' && styles.tabActiveNoBorder]}>
             <Ionicons name="megaphone-outline" size={20} color={activeTab === 'reports' ? (theme === 'dark' ? '#FFFFFF' : '#0F172A') : helpColor} />
-            <Text style={[styles.tabText, { color: activeTab === 'reports' ? textColor : helpColor }]}>Denuncias</Text>
+            <Text style={[styles.tabText, { color: activeTab === 'reports' ? colors.text : helpColor, fontSize: 11 * textScale }]}>Denuncias</Text>
           </Pressable>
         </View>
 
@@ -472,7 +521,9 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 },
+  topBar: { marginBottom: 8 },
+  logo: { width: 96, height: 96 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   backButton: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   achievementsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(107, 114, 128, 0.2)' },
@@ -481,6 +532,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700' },
   avatarWrapper: { alignItems: 'center', marginBottom: 24 },
   avatarCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, borderColor: ACCENT, backgroundColor: 'rgba(31,41,55,1)', justifyContent: 'center', alignItems: 'center' },
+  avatarCircleLight: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
+  },
   avatarCircleNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   tabsContainer: { flexDirection: 'row', marginBottom: 24, gap: 8 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
@@ -493,8 +548,24 @@ const styles = StyleSheet.create({
   inputNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   inputDisabled: { opacity: 0.7 },
   textarea: { minHeight: 100, textAlignVertical: 'top' },
-  primaryButton: { backgroundColor: ACCENT, borderRadius: 999, paddingVertical: 10, alignItems: 'center', minHeight: 44, marginTop: 8 },
-  primaryButtonText: { color: '#000000', fontWeight: '600', fontSize: 15 },
+  primaryButton: { backgroundColor: '#000000', borderRadius: 999, paddingVertical: 10, alignItems: 'center', minHeight: 44, marginTop: 8, borderWidth: 2, borderColor: '#FFFFFF' },
+  primaryButtonLight: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  primaryButtonLightNoBorder: {
+    backgroundColor: '#E5E7EB',
+    borderWidth: 0,
+  },
+  primaryButtonDarkNoBorder: {
+    backgroundColor: '#374151',
+    borderWidth: 0,
+  },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  primaryButtonTextLight: {
+    color: '#000000',
+  },
   secondaryButton: { borderRadius: 999, borderWidth: 1, borderColor: ACCENT, paddingVertical: 10, alignItems: 'center', minHeight: 44 },
   secondaryButtonNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   secondaryButtonText: { fontWeight: '600', fontSize: 15 },
@@ -502,16 +573,33 @@ const styles = StyleSheet.create({
   sectionHelp: { fontSize: 12, marginBottom: 12 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 12 },
   switchHelp: { fontSize: 11 },
+  textScaleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
+  textScaleControls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  scaleButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+  scaleButtonText: { fontSize: 24, fontWeight: '600' },
+  scaleIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 50, justifyContent: 'center' },
+  scaleSmallA: { fontSize: 14, fontWeight: '600' },
+  scaleLargeA: { fontSize: 22, fontWeight: '600' },
   divider: { height: 1, backgroundColor: 'rgba(148,163,184,0.4)', marginVertical: 12 },
   themeToggle: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
   themeToggleNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   themeToggleText: { fontSize: 13 },
   achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   achievementCard: { width: '47%', borderRadius: 16, padding: 12, backgroundColor: 'rgba(15,23,42,0.9)', borderWidth: 1, borderColor: 'rgba(31,41,55,1)' },
-  achievementCardLight: { backgroundColor: 'rgba(255,255,255,0.85)', borderColor: 'rgba(15,23,42,0.12)' },
+  achievementCardLight: { backgroundColor: '#FFFFFF', borderColor: '#000000' },
   achievementCardLocked: { opacity: 0.6 },
   achievementCardNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   iconCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(107, 114, 128, 0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  iconCircleLight: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  iconCircleEarnedLight: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
   achievementTitle: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
   achievementDesc: { fontSize: 11 },
   conditionBox: {
@@ -524,8 +612,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   conditionBoxLight: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderColor: 'rgba(15,23,42,0.12)',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
   },
   conditionBoxNoBorder: {
     borderWidth: 0,
@@ -540,13 +628,21 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: ACCENT,
   },
+  earnedPillLight: {
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
   earnedPillText: {
     color: '#000000',
     fontSize: 10,
     fontWeight: '700',
   },
+  earnedPillTextLight: {
+    color: '#FFFFFF',
+  },
   comingSoonBox: { alignItems: 'center', padding: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  comingSoonBoxLight: { backgroundColor: 'rgba(255,255,255,0.85)', borderColor: 'rgba(15,23,42,0.12)' },
+  comingSoonBoxLight: { backgroundColor: '#FFFFFF', borderColor: '#000000' },
   comingSoonBoxNoBorder: { borderWidth: 0, backgroundColor: 'transparent' },
   comingSoonTitle: { fontSize: 18, fontWeight: '700', marginTop: 16, marginBottom: 8 },
   comingSoonText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },

@@ -43,58 +43,74 @@
  * ============================================================================
  */
 
+import { getCommonStyles, getTextStyles, getThemeColors } from '@/constants/globalStyles';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useCourses } from '@/contexts/CoursesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const ACCENT = '#6B7280'; // Color de acento: gris medio
 
 export default function MiRutaScreen() {
   const router = useRouter();
   // Obtener configuraciones de accesibilidad
-  const { theme, largeText, easyReading, noBorders } = useAppSettings();
+  const { theme, textScale, easyReading, noBorders } = useAppSettings();
   // Obtener todos los módulos/cursos
   const { modules } = useCourses();
   
-  // Colores según el tema
-  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
-  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
-  const sub = theme === 'dark' ? '#C7C9E8' : '#4B5563';
+  // Estilos globales
+  const commonStyles = getCommonStyles(theme, noBorders);
+  const textStyles = getTextStyles(textScale);
+  const colors = getThemeColors(theme);
 
   return (
-    <View style={[styles.root, { backgroundColor: bg }]}>
-      <View style={[styles.gradient, { backgroundColor: bg }]} />
-      <View style={styles.header} accessibilityLabel="Pantalla Mi Ruta de aprendizaje">
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <Pressable
-            onPress={() => {
-              if (typeof router.canGoBack === 'function' && router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/(tabs)');
-              }
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            hitSlop={8}
-            style={{ marginRight: 8 }}
-          >
-            <Ionicons name="chevron-back" size={18} color={text} />
-          </Pressable>
-          <Text accessibilityRole="header" style={[styles.title, { color: text }, largeText && { fontSize: 24 }]}>Mi Ruta</Text>
-        </View>
-        <Text style={[styles.subtitle, { color: sub }, largeText && { fontSize: 16 }]}>
-          {easyReading ? 'Avanza a tu ritmo.' : 'Avanza módulo a módulo a tu propio ritmo. Todo el contenido está diseñado para que aprendas de forma progresiva y sin presiones.'}
-        </Text>
-      </View>
-
+    <View style={commonStyles.root}>
+      <View style={commonStyles.gradient} />
+      
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        style={commonStyles.scrollContainer}
+        contentContainerStyle={commonStyles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
       >
+        {/* Header con logotipo */}
+        <View style={commonStyles.topBar}>
+          <Image 
+            source={theme === 'dark' 
+              ? require('@/assets/images/logo.png')
+              : require('@/assets/images/logo-light.png')
+            }
+            style={commonStyles.logo}
+            resizeMode="contain"
+            accessibilityLabel="Logotipo Neurogestión"
+          />
+        </View>
+        
+        <View style={styles.header} accessibilityLabel="Pantalla Mi Ruta de aprendizaje">
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Pressable
+              onPress={() => {
+                if (typeof router.canGoBack === 'function' && router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)');
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              hitSlop={8}
+              style={{ marginRight: 8 }}
+            >
+              <Ionicons name="chevron-back" size={18} color={colors.text} />
+            </Pressable>
+            <Text accessibilityRole="header" style={[textStyles.title, { color: colors.text }]}>Mi Ruta</Text>
+          </View>
+          <Text style={[textStyles.subtitle, { color: colors.sub }]}>
+            {easyReading ? 'Avanza a tu ritmo.' : 'Avanza módulo a módulo a tu propio ritmo. Todo el contenido está diseñado para que aprendas de forma progresiva y sin presiones.'}
+          </Text>
+        </View>
         {/* Mapear cada módulo y mostrar su tarjeta */}
         {modules.map((module) => {
           // ========== CÁLCULOS POR MÓDULO ==========
@@ -113,15 +129,15 @@ export default function MiRutaScreen() {
           return (
             <View
               key={module.id}
-              style={[styles.card, theme === 'light' && styles.cardLight, noBorders && styles.cardNoBorder]}
+              style={[commonStyles.card, noBorders && commonStyles.cardNoBorder]}
             >
-              <Text style={[styles.moduleTitle, { color: text }, largeText && { fontSize: 18 }]}>{module.title}</Text>
-              <Text style={[styles.moduleDescription, { color: sub }, largeText && { fontSize: 14 }]}>
+              <Text style={[styles.moduleTitle, { color: colors.text, fontSize: 16 * textScale }]}>{module.title}</Text>
+              <Text style={[styles.moduleDescription, { color: colors.sub, fontSize: 13 * textScale }]}>
                 {easyReading ? `${module.title} · ${progressPercent}%` : module.description}
               </Text>
 
               <View style={styles.mediaRow}>
-                <View style={styles.mediaPill}>
+                <View style={commonStyles.mediaPill}>
                   <Ionicons
                     name="videocam"
                     size={14}
@@ -130,11 +146,11 @@ export default function MiRutaScreen() {
                     accessible={false}
                     importantForAccessibility="no"
                   />
-                  <Text style={styles.mediaText}>
+                  <Text style={[textStyles.pillText, { color: '#FFFFFF' }]}>
                     Videos · {videoCount}
                   </Text>
                 </View>
-                <View style={styles.mediaPill}>
+                <View style={commonStyles.mediaPill}>
                   <Ionicons
                     name="mic"
                     size={14}
@@ -143,7 +159,7 @@ export default function MiRutaScreen() {
                     accessible={false}
                     importantForAccessibility="no"
                   />
-                  <Text style={styles.mediaText}>
+                  <Text style={[textStyles.pillText, { color: '#FFFFFF' }]}>
                     Podcasts · {podcastCount}
                   </Text>
                 </View>
@@ -151,7 +167,7 @@ export default function MiRutaScreen() {
 
               <View style={styles.progressRow}>
                 <View
-                  style={styles.progressBarBackground}
+                  style={commonStyles.progressBarBackground}
                   accessible
                   accessibilityRole="progressbar"
                   accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
@@ -159,12 +175,12 @@ export default function MiRutaScreen() {
                 >
                   <View
                     style={[
-                      styles.progressBarFill,
+                      commonStyles.progressBarFill,
                       { width: `${progressPercent}%` },
                     ]}
                   />
                 </View>
-                <Text style={[styles.progressText, { color: text }, largeText && { fontSize: 12 }]}>
+                <Text style={[textStyles.smallText, { color: colors.text }]}>
                   {progressPercent}% completado
                 </Text>
               </View>
@@ -172,11 +188,11 @@ export default function MiRutaScreen() {
               {nextLesson ? (
                 <View style={styles.nextLessonRow}>
                   <View>
-                    <Text style={[styles.nextLabel, { color: text }, largeText && { fontSize: 12 }]}>
+                    <Text style={[textStyles.smallText, { color: colors.text }]}>
                       Siguiente lección
                     </Text>
-                    <Text style={[styles.nextTitle, { color: text }, largeText && { fontSize: 16 }]}>{nextLesson.title}</Text>
-                    <Text style={[styles.nextMeta, { color: text }, largeText && { fontSize: 12 }]}>
+                    <Text style={[textStyles.bodyText, { color: colors.text, fontWeight: '500' }]}>{nextLesson.title}</Text>
+                    <Text style={[textStyles.smallText, { color: colors.text, marginTop: 2 }]}>
                       {easyReading 
                         ? `${nextLesson.durationMinutes} minutos` 
                         : `Aproximadamente ${nextLesson.durationMinutes} minutos · ${nextLesson.mediaType === 'video' ? 'Video corto y directo' : 'Podcast corto y práctico'} para tu aprendizaje.`}
@@ -185,14 +201,18 @@ export default function MiRutaScreen() {
                   {/* Botón de acceso único a la lista de lecciones */}
                 </View>
               ) : (
-                <Text style={[styles.completedText, { color: text }, largeText && { fontSize: 13 }]}>
+                <Text style={[textStyles.secondaryText, { color: colors.text, marginTop: 8 }]}>
                   {easyReading 
                     ? '¡Módulo completado!' 
                     : '¡Felicidades! Has completado este módulo. Revisa tus logros desbloqueados en el panel de progreso del inicio.'}
                 </Text>
               )}
               <Pressable
-                style={[styles.secondaryPill, noBorders && styles.secondaryPillNoBorder]}
+                style={[
+                  commonStyles.secondaryButton, 
+                  noBorders && commonStyles.secondaryButtonNoBorder,
+                  { marginTop: 8 }
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel={`Abrir lista de lecciones de ${module.title}`}
                 accessibilityHint="Abre la lista completa de lecciones con transcripción."
@@ -203,7 +223,7 @@ export default function MiRutaScreen() {
                   })
                 }
               >
-                <Text style={[styles.secondaryPillText, { color: text }, largeText && { fontSize: 14 }]}>
+                <Text style={[textStyles.buttonText, { color: colors.text }]}>
                   Ver lecciones
                 </Text>
               </Pressable>
@@ -217,59 +237,14 @@ export default function MiRutaScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000000',
-  },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#C7C9E8',
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    gap: 12,
-  },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    marginBottom: 12,
-  },
-  cardLight: {
-    backgroundColor: 'rgba(255,255,255,0.75)',
-    borderColor: 'rgba(0, 0, 0, 0.15)',
-  },
-  cardNoBorder: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
+    paddingTop: 8,
   },
   moduleTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   moduleDescription: {
-    color: '#C7C9E8',
-    fontSize: 13,
     marginBottom: 8,
   },
   mediaRow: {
@@ -277,38 +252,11 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  mediaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(107, 114, 128, 0.3)',
-  },
-  mediaText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-  },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
-  },
-  progressBarBackground: {
-    flex: 1,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(107, 114, 128, 0.25)',
-  },
-  progressBarFill: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: ACCENT,
-  },
-  progressText: {
-    color: '#C7C9E8',
-    fontSize: 11,
   },
   nextLessonRow: {
     flexDirection: 'row',
@@ -316,58 +264,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     gap: 12,
-  },
-  nextLabel: {
-    color: '#C7C9E8',
-    fontSize: 11,
-  },
-  nextTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  nextMeta: {
-    color: '#C7C9E8',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  primaryPill: {
-    backgroundColor: ACCENT,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryPillText: {
-    color: '#000000',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  secondaryPill: {
-    marginTop: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: ACCENT,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryPillNoBorder: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  secondaryPillText: {
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  completedText: {
-    color: '#C7C9E8',
-    fontSize: 12,
-    marginTop: 8,
   },
 });

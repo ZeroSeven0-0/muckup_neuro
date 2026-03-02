@@ -1,118 +1,47 @@
-/**
- * ============================================================================
- * ACHIEVEMENTS SCREEN (PANTALLA DE LOGROS)
- * ============================================================================
- * Ubicación: app/achievements.tsx
- * Ruta: /achievements (pantalla independiente)
- * 
- * PROPÓSITO:
- * Esta pantalla muestra todos los logros/badges disponibles en la app.
- * Permite al usuario ver cuáles ha desbloqueado y las condiciones para
- * desbloquear los que aún no tiene.
- * 
- * NOTA: Esta pantalla está siendo reemplazada por la tab "Logros" en el perfil.
- * Se mantiene por compatibilidad pero la navegación principal usa /profile?tab=achievements
- * 
- * SECCIONES DE LA PANTALLA:
- * 1. Header con botón volver y título "Tus Logros"
- * 2. Contador de logros obtenidos vs totales
- * 3. Grid de tarjetas de logros (2 columnas), cada una muestra:
- *    - Ícono del logro
- *    - Título y descripción
- *    - Caja de condición (cómo desbloquearlo)
- *    - Badge "Obtenido" si está desbloqueado
- *    - Opacidad reducida si no está desbloqueado
- * 
- * CÁLCULO DE LOGROS DESBLOQUEADOS:
- * Los logros se desbloquean según estas condiciones:
- * - first_step: Completar 1 módulo
- * - neuro_impulso_1: Completar 3 lecciones
- * - neuro_impulso_2: Completar 2 módulos
- * - neuro_impulso_3: Completar todos los módulos
- * - course_complete: Completar todos los módulos
- * - soft_skills_star: Completar 3 lecciones
- * - interview_ready: Completar el módulo de entrevistas
- * 
- * NAVEGACIÓN:
- * - Botón volver → Regresa a la pantalla anterior
- * 
- * ACCESIBILIDAD:
- * - Soporta largeText (texto grande)
- * - Soporta easyReading (textos simplificados)
- * - Soporta noBorders (sin bordes)
- * - Soporta highContrast (alto contraste)
- * - Soporta theme dark/light
- * - Cada logro tiene accessibilityLabel descriptivo
- * 
- * INTEGRACIÓN CON BACKEND (FUTURO):
- * - Los logros desbloqueados vendrán del backend
- * - Se sincronizarán automáticamente al completar lecciones/módulos
- * ============================================================================
- */
-
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ACHIEVEMENTS } from '@/constants/b2c-mock';
+import { getThemeColors } from '@/constants/globalStyles';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useCourses } from '@/contexts/CoursesContext';
+import { getEarnedAchievements } from '@/utils/achievements';
 
-const ACCENT = '#6B7280'; // Color de acento: gris medio
+const ACCENT = '#6B7280';
 
 export default function AchievementsScreen() {
   const router = useRouter();
-  // Obtener configuraciones de accesibilidad
-  const { theme, highContrast, largeText, easyReading, noBorders } = useAppSettings();
+  const { theme, highContrast, textScale, easyReading, noBorders } = useAppSettings();
 
-  // Obtener datos de cursos para calcular logros
   const { modules } = useCourses();
+  const { earnedIds } = getEarnedAchievements(modules);
   
-  // ========== CÁLCULO DE LOGROS DESBLOQUEADOS ==========
-  // Módulos completados (todas las lecciones completadas)
-  const completedModules = modules.filter(
-    (m) => m.lessons.length > 0 && m.lessons.every((lesson) => lesson.completed)
-  );
-  
-  // Total de lecciones completadas
-  const completedLessonsCount = modules.reduce(
-    (acc, m) => acc + m.lessons.filter((lesson) => lesson.completed).length,
-    0
-  );
-  
-  // Total de módulos disponibles
-  const totalModules = modules.length;
-
-  // Set de IDs de logros desbloqueados
-  const earnedIds = new Set<string>();
-  
-  // Aplicar condiciones para desbloquear logros
-  if (completedModules.length >= 1) earnedIds.add('first_step');
-  if (completedModules.length >= 2) earnedIds.add('neuro_impulso_2');
-  if (completedModules.length === totalModules && totalModules > 0) {
-    earnedIds.add('neuro_impulso_3');
-    earnedIds.add('course_complete');
-  }
-  if (completedLessonsCount >= 3) {
-    earnedIds.add('soft_skills_star');
-    earnedIds.add('neuro_impulso_1');
-  }
-  // Logro especial: completar módulo de entrevistas
-  const entrevistasModule = modules.find((m) => m.title.toLowerCase().includes('entrevistas'));
-  if (entrevistasModule && entrevistasModule.lessons.every((lesson) => lesson.completed)) {
-    earnedIds.add('interview_ready');
-  }
-
-  // Colores según el tema
-  const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
-  const text = theme === 'dark' ? '#FFFFFF' : '#0F172A';
-  const sub = theme === 'dark' ? '#C7C9E8' : '#334155';
+  const colors = getThemeColors(theme);
 
   return (
-    <View style={[styles.root, { backgroundColor: bg }]}>
-      <View style={[styles.gradient, { backgroundColor: bg }]} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <View style={[styles.gradient, { backgroundColor: colors.bg }]} />
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
+        {/* Logo */}
+        <View style={styles.topBar}>
+          <Image 
+            source={theme === 'dark' 
+              ? require('@/assets/images/logo.png')
+              : require('@/assets/images/logo-light.png')
+            }
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel="Logotipo Neurogestión"
+          />
+        </View>
+        
         <View style={styles.headerRow}>
           <Pressable
             onPress={() => router.back()}
@@ -126,28 +55,26 @@ export default function AchievementsScreen() {
               noBorders && styles.backButtonNoBorder,
             ]}
           >
-            <Ionicons name="chevron-back" size={20} color={text} />
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text accessibilityRole="header" style={[styles.title, { color: text }, largeText && styles.titleLarge]}>
+            <Text accessibilityRole="header" style={[styles.title, { color: colors.text, fontSize: 22 * textScale }]}>
               Tus Logros
             </Text>
-            <Text style={[styles.subtitle, { color: sub }, largeText && styles.subtitleLarge]}>
+            <Text style={[styles.subtitle, { color: colors.sub, fontSize: 14 * textScale }]}>
               {easyReading ? 'Revisa tus logros y cómo conseguirlos.' : 'Revisa todos tus logros desbloqueados y las condiciones específicas para desbloquear cada uno de los badges disponibles.'}
             </Text>
           </View>
         </View>
 
         <View style={styles.metaRow}>
-          <Text style={[styles.metaText, { color: sub }]}>
+          <Text style={[styles.metaText, { color: colors.sub, fontSize: 12 * textScale }]}>
             {Array.from(earnedIds).length} de {ACHIEVEMENTS.length} logros
           </Text>
         </View>
 
         <View style={styles.grid}>
-          {/* Mapear todos los logros disponibles */}
           {ACHIEVEMENTS.map((a) => {
-            // Verificar si este logro está desbloqueado
             const earned = earnedIds.has(a.id);
             return (
               <View
@@ -161,26 +88,30 @@ export default function AchievementsScreen() {
                 ]}
                 accessibilityLabel={`${a.title}. ${earned ? 'Obtenido' : 'No obtenido'}. Condición: ${a.condition}`}
               >
-                <View style={styles.iconCircle}>
+                <View style={[
+                  styles.iconCircle,
+                  theme === 'light' && styles.iconCircleLight,
+                  earned && theme === 'light' && styles.iconCircleEarnedLight,
+                ]}>
                   <Ionicons
                     name={a.icon as any}
                     size={20}
-                    color={earned ? '#FFFFFF' : theme === 'dark' ? '#9CA3AF' : '#64748B'}
+                    color={earned ? (theme === 'dark' ? '#FFFFFF' : '#000000') : (theme === 'dark' ? '#9CA3AF' : '#666666')}
                   />
                 </View>
-                <Text style={[styles.cardTitle, { color: text }]}>{a.title}</Text>
-                <Text style={[styles.cardDesc, { color: sub }]}>
+                <Text style={[styles.cardTitle, { color: colors.text, fontSize: 13 * textScale }]}>{a.title}</Text>
+                <Text style={[styles.cardDesc, { color: colors.sub, fontSize: 11 * textScale }]}>
                   {a.description}
                 </Text>
 
                 <View style={[styles.conditionBox, theme === 'light' && styles.conditionBoxLight, noBorders && styles.conditionBoxNoBorder]}>
-                  <Text style={[styles.conditionLabel, { color: sub }]}>Condición</Text>
-                  <Text style={[styles.conditionText, { color: text }]}>{a.condition}</Text>
+                  <Text style={[styles.conditionLabel, { color: colors.sub, fontSize: 10 * textScale }]}>Condición</Text>
+                  <Text style={[styles.conditionText, { color: colors.text, fontSize: 11 * textScale }]}>{a.condition}</Text>
                 </View>
 
                 {earned && (
-                  <View style={styles.earnedPill}>
-                    <Text style={styles.earnedPillText}>Obtenido</Text>
+                  <View style={[styles.earnedPill, theme === 'light' && styles.earnedPillLight]}>
+                    <Text style={[styles.earnedPillText, { fontSize: 10 * textScale }, theme === 'light' && styles.earnedPillTextLight]}>Obtenido</Text>
                   </View>
                 )}
               </View>
@@ -195,10 +126,20 @@ export default function AchievementsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   gradient: { ...StyleSheet.absoluteFillObject },
+  scrollContainer: {
+    flex: 1,
+  },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 16,
     paddingBottom: 32,
+  },
+  topBar: {
+    marginBottom: 8,
+  },
+  logo: {
+    width: 96,
+    height: 96,
   },
   headerRow: {
     flexDirection: 'row',
@@ -226,9 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   title: { fontSize: 22, fontWeight: '700' },
-  titleLarge: { fontSize: 26 },
   subtitle: { fontSize: 14, marginTop: 4 },
-  subtitleLarge: { fontSize: 16 },
   metaRow: {
     marginBottom: 12,
   },
@@ -248,8 +187,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(31,41,55,1)',
   },
   cardLight: {
-    backgroundColor: 'rgba(255,255,255,0.75)',
-    borderColor: 'rgba(15,23,42,0.12)',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
   },
   cardHC: {
     borderColor: ACCENT,
@@ -268,6 +207,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  iconCircleLight: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  iconCircleEarnedLight: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
   cardTitle: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
   cardDesc: { fontSize: 11, marginBottom: 10 },
   conditionBox: {
@@ -279,8 +228,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   conditionBoxLight: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderColor: 'rgba(15,23,42,0.12)',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
   },
   conditionBoxNoBorder: {
     borderWidth: 0,
@@ -295,9 +244,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: ACCENT,
   },
+  earnedPillLight: {
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
   earnedPillText: {
     color: '#000000',
     fontSize: 10,
     fontWeight: '700',
+  },
+  earnedPillTextLight: {
+    color: '#FFFFFF',
   },
 });

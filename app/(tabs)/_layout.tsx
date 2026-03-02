@@ -3,21 +3,21 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   const { theme } = useAppSettings();
+  const isDark = theme === 'dark';
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[theme].tint,
-        tabBarInactiveTintColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#000000',
+        tabBarInactiveTintColor: isDark ? '#9BA1A6' : '#687076',
         tabBarStyle: {
-          backgroundColor: theme === 'dark' ? '#000000' : '#FFFFFF',
-          borderTopColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+          backgroundColor: isDark ? '#000000' : '#FFFFFF',
+          borderTopColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
           borderTopWidth: 1,
         },
         headerShown: false,

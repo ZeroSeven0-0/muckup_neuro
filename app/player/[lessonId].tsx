@@ -142,7 +142,7 @@ export default function PlayerScreen() {
   const [expanded, setExpanded] = useState(true);   // Si está en modo ampliado
   
   // Configuraciones de accesibilidad
-  const { theme, largeText, noBorders, easyReading } = useAppSettings();
+  const { theme, textScale, noBorders, easyReading } = useAppSettings();
   
   // Colores según el tema
   const bg = theme === 'dark' ? '#000000' : '#FFFFFF';
@@ -200,7 +200,7 @@ export default function PlayerScreen() {
           <Ionicons name="chevron-back" size={22} color={textColor} />
         </Pressable>
         <Text
-          style={[styles.title, { color: textColor }, largeText && { fontSize: 18 }]}
+          style={[styles.title, { color: textColor, fontSize: 16 * textScale }]}
           accessibilityRole="header"
           accessibilityLabel={`Reproductor. ${lesson.title}`}
         >
@@ -214,7 +214,7 @@ export default function PlayerScreen() {
           accessibilityLabel={expanded ? 'Reducir reproductor' : 'Ampliar reproductor'}
           hitSlop={8}
         >
-          <Text style={[styles.expandText, { color: textColor }]}>
+          <Text style={[styles.expandText, { color: textColor, fontSize: 12 * textScale }]}>
             {easyReading ? (expanded ? '-' : '+') : (expanded ? 'Reducir' : 'Ampliar')}
           </Text>
         </Pressable>
@@ -223,7 +223,7 @@ export default function PlayerScreen() {
       {/* Aviso especial para contenido de Spotify */}
       {isSpotify && (
         <View style={[styles.noticeBox, { borderColor: transcriptBorder, backgroundColor: transcriptHeaderBg }, noBorders && styles.noticeBoxNoBorder]}>
-          <Text style={[styles.noticeText, { color: textColor }]}>
+          <Text style={[styles.noticeText, { color: textColor, fontSize: 12 * textScale }]}>
             {easyReading 
               ? 'Puedes abrir en Spotify si no carga.' 
               : 'También puedes abrir directamente en Spotify si prefieres usar su reproductor nativo o si el reproductor integrado no carga correctamente (esto puede ocurrir ocasionalmente por restricciones de Spotify).'}
@@ -234,7 +234,7 @@ export default function PlayerScreen() {
             accessibilityRole="button"
             accessibilityLabel="Abrir audio en Spotify"
           >
-            <Text style={[styles.noticeBtnText, { color: textColor }]}>Abrir en Spotify</Text>
+            <Text style={[styles.noticeBtnText, { color: textColor, fontSize: 12 * textScale }]}>Abrir en Spotify</Text>
           </Pressable>
         </View>
       )}
@@ -300,7 +300,7 @@ export default function PlayerScreen() {
         {/* Fallback cuando el reproductor falla (ej: YouTube bloqueó el embed) */}
         {failed && (
           <View style={styles.fallback}>
-            <Text style={[styles.fallbackText, { color: textColor }]}>
+            <Text style={[styles.fallbackText, { color: textColor, fontSize: 13 * textScale }]}>
               {easyReading 
                 ? 'No se pudo cargar el video.' 
                 : 'No se pudo cargar el reproductor integrado. Esto puede ocurrir porque YouTube bloquea la inserción de algunos videos por políticas de privacidad.'}
@@ -311,7 +311,7 @@ export default function PlayerScreen() {
               accessibilityRole="button"
               accessibilityLabel="Abrir contenido en su aplicación"
             >
-              <Text style={[styles.fallbackBtnText, { color: fallbackBtnText }]}>
+              <Text style={[styles.fallbackBtnText, { color: fallbackBtnText, fontSize: 13 * textScale }]}>
                 {easyReading ? 'Abrir en app externa' : 'Abrir contenido en aplicación externa'}
               </Text>
             </Pressable>
@@ -320,7 +320,7 @@ export default function PlayerScreen() {
       </View>
 
       <View style={styles.controlsRow}>
-        <Text style={[styles.sectionTitle, { color: textColor }]}>
+        <Text style={[styles.sectionTitle, { color: textColor, fontSize: 13 * textScale }]}>
           {easyReading ? 'Texto' : 'Transcripción'}
         </Text>
         <TranscriptToggle
@@ -332,6 +332,7 @@ export default function PlayerScreen() {
           theme={theme}
           noBorders={noBorders}
           easyReading={easyReading}
+          textScale={textScale}
         />
       </View>
     </View>
@@ -352,6 +353,7 @@ function TranscriptToggle({
   theme,
   noBorders,
   easyReading,
+  textScale,
 }: {
   transcript: string;
   textColor: string;
@@ -361,6 +363,7 @@ function TranscriptToggle({
   theme: 'dark' | 'light';
   noBorders: boolean;
   easyReading: boolean;
+  textScale: number;
 }) {
   // Estado para controlar si está abierto o cerrado
   const [open, setOpen] = useState(false);
@@ -373,7 +376,7 @@ function TranscriptToggle({
         accessibilityRole="button"
         accessibilityLabel="Mostrar u ocultar transcripción"
       >
-        <Text style={[styles.transcriptHeaderText, { color: textColor }]}>
+        <Text style={[styles.transcriptHeaderText, { color: textColor, fontSize: 13 * textScale }]}>
           {easyReading 
             ? (open ? 'Ocultar texto' : 'Ver texto') 
             : (open ? 'Ocultar transcripción completa' : 'Mostrar transcripción completa')}
@@ -382,7 +385,7 @@ function TranscriptToggle({
       </Pressable>
       {open && (
         <ScrollView style={[styles.transcriptScroll, { backgroundColor: scrollBg }]} contentContainerStyle={{ padding: 12 }}>
-          <Text style={[styles.transcriptText, { color: textColor }]}>
+          <Text style={[styles.transcriptText, { color: textColor, fontSize: 13 * textScale }]}>
             {transcript || (easyReading ? 'No hay texto disponible.' : 'No hay transcripción disponible para este contenido en este momento.')}
           </Text>
         </ScrollView>

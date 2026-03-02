@@ -1,10 +1,61 @@
+/**
+ * ============================================================================
+ * ACHIEVEMENTS DATA (DATOS DE LOGROS)
+ * ============================================================================
+ * Ubicación: constants/b2c-mock.ts
+ * 
+ * PROPÓSITO:
+ * Este archivo contiene todos los logros/badges disponibles en la app.
+ * Define la estructura de datos y la lista completa de logros.
+ * 
+ * ESTRUCTURA DE UN LOGRO:
+ * - id: Identificador único (usado para verificar si está desbloqueado)
+ * - title: Nombre del logro
+ * - description: Descripción de lo que representa
+ * - condition: Texto que explica cómo desbloquearlo
+ * - points: Puntos que otorga (no usado actualmente)
+ * - icon: Nombre del ícono de Ionicons
+ * 
+ * LOGROS DISPONIBLES (11 total):
+ * 1. Primer Paso - Completar 1 módulo
+ * 2. Maestro del CV - Completar módulo de CV
+ * 3. Listo para Entrevistas - Completar módulo de entrevistas
+ * 4. LinkedIn Pro - Optimizar perfil de LinkedIn
+ * 5. Ninja del Networking - Registrar contactos y mensajes
+ * 6. Cazador de Empleo - Registrar postulaciones
+ * 7. Estrella Soft Skills - Completar lecciones de soft skills
+ * 8. Neuro-Impulso I - Completar 3 sesiones
+ * 9. Neuro-Impulso II - Completar 2 módulos + agendar sesión
+ * 10. Neuro-Impulso III - Completar ruta completa
+ * 11. Curso Completado - Completar todos los módulos
+ * 
+ * CÓMO SE DESBLOQUEAN:
+ * Los logros se calculan en tiempo real en las pantallas que los muestran:
+ * - Dashboard (app/(tabs)/index.tsx)
+ * - Profile → Logros (app/profile.tsx)
+ * - Achievements (app/achievements.tsx)
+ * 
+ * CÓMO AGREGAR UN NUEVO LOGRO:
+ * 1. Agrega un nuevo objeto al array ACHIEVEMENTS
+ * 2. Define un id único (ej: 'new_achievement')
+ * 3. Completa todos los campos requeridos
+ * 4. Agrega la lógica de desbloqueo en los archivos que calculan logros
+ * 
+ * INTEGRACIÓN CON BACKEND (FUTURO):
+ * - Los logros vendrán de la API
+ * - Se calcularán en el backend según el progreso del usuario
+ * - Se sincronizarán automáticamente al completar acciones
+ * ============================================================================
+ */
+
+// Tipo de dato para un logro
 export type Achievement = {
-  id: string;
-  title: string;
-  description: string;
-  condition: string;
-  points: number;
-  icon:
+  id: string;              // ID único del logro
+  title: string;           // Nombre del logro
+  description: string;     // Descripción de lo que representa
+  condition: string;       // Cómo desbloquearlo
+  points: number;          // Puntos que otorga (no usado actualmente)
+  icon:                    // Ícono de Ionicons
     | 'star'
     | 'document-text'
     | 'chatbubbles'
@@ -16,6 +67,10 @@ export type Achievement = {
     | 'trophy';
 };
 
+/**
+ * Lista completa de logros disponibles en la app
+ * Cada logro tiene condiciones específicas para desbloquearse
+ */
 export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'first_step',
